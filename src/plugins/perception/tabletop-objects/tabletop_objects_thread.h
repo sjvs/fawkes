@@ -49,6 +49,7 @@
 
 #include <map>
 #include <list>
+#include <string>
 
 namespace fawkes {
   class Position3DInterface;
@@ -145,8 +146,10 @@ class TabletopObjectsThread
 
  private:
   void set_position(fawkes::Position3DInterface *iface,
-                    bool is_visible, const Eigen::Vector4f &centroid = Eigen::Vector4f(0, 0, 0, 0),
-                    const Eigen::Quaternionf &rotation = Eigen::Quaternionf(1, 0, 0, 0));
+                    bool is_visible,
+                    const Eigen::Vector4f &centroid = Eigen::Vector4f(0, 0, 0, 0),
+                    const Eigen::Quaternionf &rotation = Eigen::Quaternionf(1, 0, 0, 0),
+                    std::string source_frame = "");
 
   CloudPtr simplify_polygon(CloudPtr polygon, float sqr_dist_threshold);
   CloudPtr generate_table_model(const float length, const float width,

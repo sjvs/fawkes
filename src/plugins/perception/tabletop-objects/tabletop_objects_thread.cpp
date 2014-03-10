@@ -1151,7 +1151,7 @@ TabletopObjectsThread::loop()
 
   // set positions of all visible centroids
   for (CentroidMap::iterator it = centroids_.begin(); it != centroids_.end(); it++) {
-    set_position(pos_ifs_[it->first], true, it->second);
+    set_position(pos_ifs_[it->first], true, it->second, Eigen::Quaternionf(1, 0, 0, 0), "/base_link");
   }
 
   TIMETRACK_INTER(ttc_cluster_objects_, ttc_visualization_)
@@ -1436,15 +1436,20 @@ TabletopObjectsThread::compute_similarity(double d1, double d2)
 
 void
 TabletopObjectsThread::set_position(fawkes::Position3DInterface *iface,
-                                    bool is_visible, const Eigen::Vector4f &centroid,
-                                    const Eigen::Quaternionf &attitude)
+                                    bool is_visible,
+                                    const Eigen::Vector4f &centroid,
+                                    const Eigen::Quaternionf &attitude,
+                                    string source_frame)
 {
+  if (source_frame == "") {
+    source_frame = input_->header.frame_id;
+  }
   tf::Stamped<tf::Pose> baserel_pose;
   try{
     tf::Stamped<tf::Pose>
       spose(tf::Pose(tf::Quaternion(attitude.x(), attitude.y(), attitude.z(), attitude.w()),
                      tf::Vector3(centroid[0], centroid[1], centroid[2])),
-            fawkes::Time(0, 0), input_->header.frame_id);
+            fawkes::Time(0, 0), source_frame);
     tf_listener->transform_pose(cfg_result_frame_, spose, baserel_pose);
     iface->set_frame(cfg_result_frame_.c_str());
   } catch (Exception &e) {
