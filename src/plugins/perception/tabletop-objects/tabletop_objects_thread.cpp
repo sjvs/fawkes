@@ -1001,6 +1001,9 @@ TabletopObjectsThread::loop()
 
       TIMETRACK_END(ttc_transform_model_);
     }
+    else { // !cfg_table_model_enable_
+      set_position(table_pos_if_, true, table_centroid);
+    }
 
   } catch (Exception &e) {
     set_position(table_pos_if_, false);
