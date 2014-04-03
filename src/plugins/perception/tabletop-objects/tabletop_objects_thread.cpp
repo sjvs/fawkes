@@ -320,6 +320,16 @@ TabletopObjectsThread::finalize()
   pcl_manager->remove_pointcloud("tabletop-table-model");
   pcl_manager->remove_pointcloud("tabletop-simplified-polygon");
   
+  char *tmp_name;
+  for (int i = 0; i < MAX_CENTROIDS; i++) {
+    std::string obj_id;
+    if (asprintf(&tmp_name, "obj_cluster_%u", i) != -1) {
+      obj_id = tmp_name;
+      free(tmp_name);
+    }
+    pcl_manager->remove_pointcloud(obj_id.c_str());
+  }
+
   blackboard->close(table_pos_if_);
   blackboard->close(switch_if_);
   for (PosIfsVector::iterator it = pos_ifs_.begin(); it != pos_ifs_.end(); it++) {
