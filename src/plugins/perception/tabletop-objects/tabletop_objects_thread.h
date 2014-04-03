@@ -172,7 +172,7 @@ class TabletopObjectsThread
   void delete_old_centroids(OldCentroidVector centroids, unsigned int age);
   void delete_near_centroids(CentroidMap reference, OldCentroidVector centroids,
     float min_distance);
-  void remove_high_centroids(Eigen::Vector4f table_centroid, CentroidMap centroids);
+  void remove_high_centroids(Eigen::Vector4f table_centroid, CentroidMap &centroids);
   Eigen::Vector4f fit_cylinder(ColorCloudConstPtr obj_in_base_frame, Eigen::Vector4f const &centroid, uint const &centroid_i);
   std::map<unsigned int, int> track_objects(std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f>> new_centroids);
 

@@ -1682,7 +1682,7 @@ void TabletopObjectsThread::delete_near_centroids(CentroidMap reference,
 
 void
 TabletopObjectsThread::remove_high_centroids(Eigen::Vector4f table_centroid,
-  CentroidMap centroids) {
+  CentroidMap &centroids) {
   tf::Stamped<tf::Point> sp_baserel_table;
   tf::Stamped<tf::Point> sp_table(
       tf::Point(table_centroid[0], table_centroid[1], table_centroid[2]),
