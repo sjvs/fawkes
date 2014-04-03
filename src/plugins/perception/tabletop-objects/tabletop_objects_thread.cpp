@@ -1469,18 +1469,14 @@ TabletopObjectsThread::set_position(fawkes::Position3DInterface *iface,
     double rotation[4] = { quat.x(), quat.y(), quat.z(), quat.w() };
     iface->set_translation(translation);
     iface->set_rotation(rotation);
-  
-  } else {
+  } else { // !is_visible
     if (visibility_history <= 0) {
       iface->set_visibility_history(visibility_history - 1);
     } else {
       iface->set_visibility_history(-1);
-      double translation[3] = { 0, 0, 0 };
-      double rotation[4] = { 0, 0, 0, 1 };
-      iface->set_translation(translation);
-      iface->set_rotation(rotation);
     }
   }
+
   iface->write();  
 }
 
