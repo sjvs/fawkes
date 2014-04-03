@@ -1295,10 +1295,6 @@ TabletopObjectsThread::cluster_objects(CloudConstPtr input_cloud,
         it != cluster_indices.end() && centroid_i < MAX_CENTROIDS;
         ++it, ++centroid_i)
     {
-
-      logger->log_debug(name(), "********************Processing obj_%u********************",
-      centroid_i);
-
       //Centroids in cam frame:
       //pcl::compute3DCentroid(*cloud_objs_, it->indices, centroids[centroid_i]);
 
@@ -1736,17 +1732,21 @@ Eigen::Vector4f TabletopObjectsThread::fit_cylinder(
   obj_dim[2] = fabs(pnt_max.z - pnt_min.z);
   compute_bounding_box_scores(obj_dim, obj_size_scores);
 
-  logger->log_debug(name(), "Computed object dimensions: %f %f %f", obj_dim[0],
-      obj_dim[1], obj_dim[2]);
-  logger->log_debug(name(), "Size similarity to known objects:");
-  for (int os = 0; os < NUM_KNOWN_OBJS_; os++) {
-    logger->log_debug(name(), "** Cup %i: %f in x, %f in y, %f in z.", os,
-        obj_size_scores[os][0], obj_size_scores[os][1], obj_size_scores[os][2]);
-    obj_likelihoods_[centroid_i][os] = obj_size_scores[os][0]
-        * obj_size_scores[os][1] * obj_size_scores[os][2];
+  if (cfg_verbose_cylinder_fitting_) {
+    logger->log_debug(name(), "*******************Processing obj_%u******************",
+    centroid_i);
+    logger->log_debug(name(), "Computed object dimensions: %f %f %f", obj_dim[0],
+        obj_dim[1], obj_dim[2]);
+    logger->log_debug(name(), "Size similarity to known objects:");
   }
-
-  logger->log_debug(name(), "");
+    for (int os = 0; os < NUM_KNOWN_OBJS_; os++) {
+      if (cfg_verbose_cylinder_fitting_) {
+        logger->log_debug(name(), "** Cup %i: %f in x, %f in y, %f in z.", os,
+            obj_size_scores[os][0], obj_size_scores[os][1], obj_size_scores[os][2]);
+      }
+      obj_likelihoods_[centroid_i][os] = obj_size_scores[os][0]
+          * obj_size_scores[os][1] * obj_size_scores[os][2];
+    }
 
   //Fit cylinder:
   pcl::NormalEstimation < ColorPointType, pcl::Normal > ne;
@@ -1805,9 +1805,11 @@ Eigen::Vector4f TabletopObjectsThread::fit_cylinder(
 
     obj_shape_confidence_[centroid_i] = (double) (cloud_cylinder_baserel->points
       .size()) / (obj_in_base_frame->points.size() * 1.0);
-    logger->log_debug(name(), "Cylinder fit confidence = %zu/%zu = %f",
-        cloud_cylinder_baserel->points.size(), obj_in_base_frame->points.size(),
-        obj_shape_confidence_[centroid_i]);
+    if (cfg_verbose_cylinder_fitting_) {
+      logger->log_debug(name(), "Cylinder fit confidence = %zu/%zu = %f",
+          cloud_cylinder_baserel->points.size(), obj_in_base_frame->points.size(),
+          obj_shape_confidence_[centroid_i]);
+    }
 
     ColorPointType pnt_min;
     ColorPointType pnt_max;
@@ -1846,13 +1848,13 @@ Eigen::Vector4f TabletopObjectsThread::fit_cylinder(
         obj_shape_confidence_[centroid_i]);
   }
   for (int os = 0; os < NUM_KNOWN_OBJS_; os++) {
+    obj_likelihoods_[centroid_i][os] =
+      (0.6 * obj_likelihoods_[centroid_i][os])
+          + (0.4 * obj_shape_confidence_[centroid_i]);
     if (cfg_verbose_cylinder_fitting_) {
       logger->log_debug(name(), "** Similarity to known cup %i:", os);
       logger->log_debug(name(), "Size similarity  = %f",
           obj_likelihoods_[centroid_i][os]);
-      obj_likelihoods_[centroid_i][os] =
-        (0.6 * obj_likelihoods_[centroid_i][os])
-            + (0.4 * obj_shape_confidence_[centroid_i]);
       logger->log_debug(name(), "Overall similarity = %f",
           obj_likelihoods_[centroid_i][os]);
     }
