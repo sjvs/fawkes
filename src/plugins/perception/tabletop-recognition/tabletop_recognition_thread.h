@@ -42,6 +42,8 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/voxel_grid.h>
 
+#include "../common/perception_common.h"
+
 namespace fawkes {
   class Position3DInterface;
   class SwitchInterface;
@@ -69,35 +71,27 @@ class TabletopRecognitionThread
   virtual void loop();
   virtual void finalize();
 
- private:
-  typedef pcl::PointXYZ PointType;
-  typedef pcl::PointCloud<PointType> Cloud;
-
-  typedef pcl::PointXYZRGB ColorPointType;
-  typedef pcl::PointCloud<ColorPointType> ColorCloud;
-  typedef Cloud::Ptr CloudPtr;
-  typedef Cloud::ConstPtr CloudConstPtr;
-
-  typedef ColorCloud::Ptr ColorCloudPtr;
-  typedef ColorCloud::ConstPtr ColorCloudConstPtr;
-
   /** Stub to see name in backtrace for easier debugging. @see Thread::run() */
   protected: virtual void run() { Thread::run(); }
 
  private:
-  bool is_polygon_edge_better(PointType &cb_br_p1p, PointType &cb_br_p2p, PointType &br_p1p, PointType &br_p2p);
+  bool is_polygon_edge_better(fawkes::perception::PointType &cb_br_p1p,
+    fawkes::perception::PointType &cb_br_p2p,
+    fawkes::perception::PointType &br_p1p,
+    fawkes::perception::PointType &br_p2p);
   void convert_colored_input();
-  ColorCloudPtr colorize_cluster(CloudConstPtr input_cloud, const std::vector<int> &cluster, const uint8_t color[]);
   void set_position(fawkes::Position3DInterface *iface,
                     bool is_visible,
                     const Eigen::Vector4f &centroid = Eigen::Vector4f(0, 0, 0, 0),
                     const Eigen::Quaternionf &rotation = Eigen::Quaternionf(1, 0, 0, 0),
                     std::string source_frame = "");
-  CloudPtr simplify_polygon(CloudPtr polygon, float sqr_dist_threshold);
-  CloudPtr generate_table_model(const float length, const float width,
-                                const float thickness, const float step, const float max_error);
-  CloudPtr generate_table_model(const float length, const float width,
-                                const float step, const float max_error = 0.01);
+  fawkes::perception::CloudPtr simplify_polygon(
+    fawkes::perception::CloudPtr polygon, float sqr_dist_threshold);
+  fawkes::perception::CloudPtr generate_table_model(const float length,
+    const float width, const float thickness, const float step,
+    const float max_error);
+  fawkes::perception::CloudPtr generate_table_model(const float length,
+    const float width, const float step, const float max_error = 0.01);
 
 
  private:
@@ -130,22 +124,22 @@ class TabletopRecognitionThread
   double table_inclination_;
   Eigen::Vector4f table_centroid;
 
-  fawkes::RefPtr<Cloud> ftable_model_;
-  CloudPtr table_model_;
-  fawkes::RefPtr<const pcl::PointCloud<PointType> > finput_;
-  CloudConstPtr input_;
-  fawkes::RefPtr<const pcl::PointCloud<ColorPointType> > fcoloredinput_;
-  ColorCloudConstPtr colored_input_;
-  fawkes::RefPtr<pcl::PointCloud<PointType> > fobjects_;
-  CloudPtr objects_;
-  fawkes::RefPtr<Cloud> fsimplified_polygon_;
-  CloudPtr simplified_polygon_;
-  CloudPtr converted_input_;
-  fawkes::RefPtr<ColorCloud> ftable_cluster_;
-  ColorCloudPtr table_cluster_;
+  fawkes::RefPtr<fawkes::perception::Cloud> ftable_model_;
+  fawkes::perception::CloudPtr table_model_;
+  fawkes::RefPtr<const fawkes::perception::Cloud> finput_;
+  fawkes::perception::CloudConstPtr input_;
+  fawkes::RefPtr<const fawkes::perception::ColorCloud> fcoloredinput_;
+  fawkes::perception::ColorCloudConstPtr colored_input_;
+  fawkes::RefPtr<fawkes::perception::Cloud> fobjects_;
+  fawkes::perception::CloudPtr objects_;
+  fawkes::RefPtr<fawkes::perception::Cloud> fsimplified_polygon_;
+  fawkes::perception::CloudPtr simplified_polygon_;
+  fawkes::perception::CloudPtr converted_input_;
+  fawkes::RefPtr<fawkes::perception::ColorCloud> ftable_cluster_;
+  fawkes::perception::ColorCloudPtr table_cluster_;
 
-  pcl::VoxelGrid<PointType> grid_;
-  pcl::SACSegmentation<PointType> seg_;
+  pcl::VoxelGrid<fawkes::perception::PointType> grid_;
+  pcl::SACSegmentation<fawkes::perception::PointType> seg_;
   fawkes::Time *last_pcl_time_;
   unsigned int loop_count_;
 

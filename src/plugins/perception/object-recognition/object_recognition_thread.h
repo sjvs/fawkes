@@ -42,6 +42,8 @@
 #include <list>
 #include <string>
 
+#include "../common/perception_common.h"
+
 namespace fawkes {
   class Position3DInterface;
   class SwitchInterface;
@@ -113,17 +115,6 @@ class ObjectRecognitionThread
   virtual void finalize();
 
  private:
-  typedef pcl::PointXYZ PointType;
-  typedef pcl::PointCloud<PointType> Cloud;
-
-  typedef pcl::PointXYZRGB ColorPointType;
-  typedef pcl::PointCloud<ColorPointType> ColorCloud;
-  typedef Cloud::Ptr CloudPtr;
-  typedef Cloud::ConstPtr CloudConstPtr;
-
-  typedef ColorCloud::Ptr ColorCloudPtr;
-  typedef ColorCloud::ConstPtr ColorCloudConstPtr;
-
   typedef std::map<unsigned int, Eigen::Vector4f, std::less<unsigned int>,
       Eigen::aligned_allocator<std::pair<const unsigned int, Eigen::Vector4f> > > CentroidMap;
   typedef std::list<OldCentroid, Eigen::aligned_allocator<OldCentroid> > OldCentroidVector;
@@ -138,18 +129,20 @@ class ObjectRecognitionThread
                     const Eigen::Vector4f &centroid = Eigen::Vector4f(0, 0, 0, 0),
                     const Eigen::Quaternionf &rotation = Eigen::Quaternionf(1, 0, 0, 0),
                     std::string source_frame = "");
-  std::vector<pcl::PointIndices> extract_object_clusters(CloudConstPtr input);
-  ColorCloudPtr colorize_cluster(CloudConstPtr input_cloud, const std::vector<int> &cluster, const uint8_t color[]);
-  void delete_high_centroids(Eigen::Vector4f table_centroid, CentroidMap &centroids);
-  unsigned int cluster_objects(CloudConstPtr input, ColorCloudPtr tmp_clusters, std::vector<ColorCloudPtr> &tmp_obj_clusters);
+  std::vector<pcl::PointIndices> extract_object_clusters(fawkes::perception::CloudConstPtr input);
+  void delete_high_centroids(Eigen::Vector4f table_centroid,
+    CentroidMap &centroids);
+  unsigned int cluster_objects(fawkes::perception::CloudConstPtr input,
+    fawkes::perception::ColorCloudPtr tmp_clusters,
+    std::vector<fawkes::perception::ColorCloudPtr> &tmp_obj_clusters);
 
 
  private:
-  fawkes::RefPtr<const pcl::PointCloud<PointType> > finput_;
-  CloudConstPtr input_;
+  fawkes::RefPtr<const fawkes::perception::Cloud> finput_;
+  fawkes::perception::CloudConstPtr input_;
 
-  std::vector<fawkes::RefPtr<pcl::PointCloud<ColorPointType> > > f_obj_clusters_;
-  std::vector<pcl::PointCloud<ColorPointType>::Ptr> obj_clusters_;
+  std::vector<fawkes::RefPtr<fawkes::perception::ColorCloud> > f_obj_clusters_;
+  std::vector<fawkes::perception::ColorCloudPtr> obj_clusters_;
 
   CentroidMap centroids_;
 

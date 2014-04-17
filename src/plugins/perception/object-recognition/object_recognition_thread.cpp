@@ -20,7 +20,8 @@
  */
 
 #include "object_recognition_thread.h"
-#include "../cluster_colors.h"
+#include "../common/cluster_colors.h"
+#include "../common/perception_common.h"
 
 #include <tf/types.h>
 #include <interfaces/Position3DInterface.h>
@@ -34,8 +35,9 @@
 #include <pcl/filters/statistical_outlier_removal.h>
 
 
-using namespace fawkes;
 using namespace std;
+using namespace fawkes;
+using namespace fawkes::perception;
 
 #define CFG_PREFIX "/perception/object-recognition/"
 
@@ -343,59 +345,14 @@ ObjectRecognitionThread::set_position(fawkes::Position3DInterface *iface,
   }
   tf::Stamped<tf::Pose> baserel_pose;
   try{
-    tf::Stamped<tf::Pose>
-      spose(tf::Pose(tf::Quaternion(attitude.x(), attitude.y(), attitude.z(), attitude.w()),
-                     tf::Vector3(centroid[0], centroid[1], centroid[2])),
-            fawkes::Time(0, 0), source_frame);
+    tf::Stamped<tf::Pose> spose = centroid_to_pose(centroid, attitude, source_frame);
     tf_listener->transform_pose(cfg_result_frame_, spose, baserel_pose);
     iface->set_frame(cfg_result_frame_.c_str());
   } catch (Exception &e) {
-    is_visible = false;
+    set_pos_interface(iface, false);
   }
 
-  int visibility_history = iface->visibility_history();
-  if (is_visible) {
-    if (visibility_history >= 0) {
-      iface->set_visibility_history(visibility_history + 1);
-    } else {
-      iface->set_visibility_history(1);
-    }
-    tf::Vector3 &origin = baserel_pose.getOrigin();
-    tf::Quaternion quat = baserel_pose.getRotation();
-    double translation[3] = { origin.x(), origin.y(), origin.z() };
-    double rotation[4] = { quat.x(), quat.y(), quat.z(), quat.w() };
-    iface->set_translation(translation);
-    iface->set_rotation(rotation);
-  } else { // !is_visible
-    if (visibility_history <= 0) {
-      iface->set_visibility_history(visibility_history - 1);
-    } else {
-      iface->set_visibility_history(-1);
-    }
-  }
-
-  iface->write();
-}
-
-ObjectRecognitionThread::ColorCloudPtr ObjectRecognitionThread::colorize_cluster (
-    CloudConstPtr input_cloud,
-    const std::vector<int> &cluster,
-    const uint8_t color[]) {
-  ColorCloudPtr result(new ColorCloud());
-  result->resize(cluster.size());
-  result->header.frame_id = input_cloud->header.frame_id;
-  uint i = 0;
-  for (std::vector<int>::const_iterator it = cluster.begin(); it != cluster.end(); ++it, ++i) {
-    ColorPointType &p1 = result->points.at(i);
-    const PointType &p2 = input_cloud->points.at(*it);
-    p1.x = p2.x;
-    p1.y = p2.y;
-    p1.z = p2.z;
-    p1.r = color[0];
-    p1.g = color[1];
-    p1.b = color[2];
-  }
-  return result;
+  set_pos_interface(iface, is_visible, baserel_pose);
 }
 
 std::vector<pcl::PointIndices>

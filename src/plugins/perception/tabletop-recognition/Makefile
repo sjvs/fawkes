@@ -38,7 +38,8 @@ endif
 
 LIBS_tabletop_recognition = fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard fawkespcl_utils \
-			Position3DInterface SwitchInterface
+			Position3DInterface SwitchInterface \
+			fawkesperception_common
 OBJS_tabletop_recognition = tabletop_recognition_plugin.o tabletop_recognition_thread.o
 
 OBJS_all    = $(OBJS_tabletop_recognition)

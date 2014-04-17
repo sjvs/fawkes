@@ -37,7 +37,8 @@ endif
 
 LIBS_object_recognition = stdc++ fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard fawkespcl_utils \
-			Position3DInterface SwitchInterface
+			Position3DInterface SwitchInterface \
+			fawkesperception_common
 OBJS_object_recognition = object_recognition_plugin.o object_recognition_thread.o
 
 OBJS_all    = $(OBJS_object_recognition)

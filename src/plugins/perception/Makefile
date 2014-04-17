@@ -18,7 +18,10 @@ BASEDIR = ../../..
 include $(BASEDIR)/etc/buildsys/config.mk
 include $(BUILDSYSDIR)/fvconf.mk
 
-SUBDIRS = base fountain retriever tabletop-objects pcl-db tabletop-recognition object-recognition
+SUBDIRS = base fountain retriever tabletop-objects pcl-db \
+	tabletop-recognition object-recognition common
 
+tabletop-recognition: common
+object-recognition: common
 include $(BUILDSYSDIR)/rules.mk
 
