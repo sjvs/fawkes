@@ -1,0 +1,24 @@
+%YAML 1.2
+%TAG ! tag:fawkesrobotics.org,cfg/
+---
+doc-url: !url http://trac.fawkesrobotics.org/wiki/Plugins/tabletop-objects
+---
+perception/object-recognition:
+  # ID of input point cloud
+  input_pointcloud: objects
+
+  # Clustering inter-point distance tolerance; m
+  cluster_tolerance: 0.044
+
+  # Minimum number of points in cluster to consider
+  cluster_min_size: 20
+
+  # Minimum number of points in cluster to consider
+  cluster_max_size: 200
+
+  # The frame in which the result should be published; frame
+  result_frame: "/base_link"
+
+  # max height of a centroid relative to the table
+  centroid_max_height: 0.3
+
