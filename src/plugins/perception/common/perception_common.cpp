@@ -94,5 +94,17 @@ ColorCloudPtr colorize_cluster (
   return result;
 }
 
+Eigen::Quaternionf normal_to_quaternion(Eigen::Vector3f normal,
+  Eigen::Vector3f reference ) {
+  Eigen::Quaternionf quat;
+  quat.setFromTwoVectors(reference, normal);
+  return quat;
 }
+
+Eigen::Vector3f quaternion_to_normal(Eigen::Quaternionf quat,
+  Eigen::Vector3f reference) {
+  return quat._transformVector(reference);
 }
+
+} // namespace perception
+} // namespace fawkes

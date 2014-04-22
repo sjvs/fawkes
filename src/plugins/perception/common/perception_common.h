@@ -29,6 +29,7 @@
 #include <interfaces/Position3DInterface.h>
 
 #include <Eigen/StdVector>
+#include <Eigen/Geometry>
 
 #include <string>
 
@@ -57,7 +58,10 @@ ColorCloudPtr colorize_cluster(CloudConstPtr input_cloud,
   const std::vector<int> &cluster, const uint8_t color[]);
 tf::Stamped<tf::Pose> centroid_to_pose(const Eigen::Vector4f &centroid,
   const Eigen::Quaternionf &attitude, const std::string &frame);
-
+Eigen::Quaternionf normal_to_quaternion(Eigen::Vector3f normal,
+  Eigen::Vector3f reference = Eigen::Vector3f(0.f, 0.f, 1.f));
+Eigen::Vector3f quaternion_to_normal(Eigen::Quaternionf quat,
+  Eigen::Vector3f reference = Eigen::Vector3f(0.f, 0.f, 1.f));
 
 }
 }
