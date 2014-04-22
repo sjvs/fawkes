@@ -1,8 +1,8 @@
 #*****************************************************************************
-#        Makefile Build System for Fawkes: Perception common library
+#        Makefile Build System for Fawkes: Perception Common Library
 #                            -------------------
 #   Created on Thu Apr 17 12:27:1047 2014
-#   Copyright (C) 2014  Till Hofmann
+#   Copyright (C) 2014 by Till Hofmann
 #
 #*****************************************************************************
 #
@@ -16,8 +16,6 @@
 BASEDIR = ../../../..
 
 include $(BASEDIR)/etc/buildsys/config.mk
-include $(BUILDSYSDIR)/pcl.mk
-include $(BUILDCONFDIR)/tf/tf.mk
 
 LIBS_libfawkesperception_common = stdc++ fawkescore fawkesutils \
 			fawkestf fawkesinterface Position3DInterface
@@ -26,16 +24,17 @@ HDRS_libfawkesperception_common = perception_common.h
 
 OBJS_all = $(OBJS_libfawkesperception_common)
 
-ifeq ($(HAVE_PCL),1)
-  ifeq ($(HAVE_TF),1)
-    CFLAGS += $(CFLAGS_TF) $(CFLAGS_PCL)
-    LDFLAGS += $(LDFLAGS_TF) $(LDFLAGS_PCL)
-    LIBS_all += $(LIBDIR)/libfawkesperception_common.so
-  else
+ifeq ($(HAVE_PERCEPTION_COMMON),1)
+  CFLAGS += $(CFLAGS_PERCEPTION_COMMON)
+  LDFLAGS += $(LDFLAGS_PERCEPTION_COMMON)
+  LIBS_all += $(LIBDIR)/libfawkesperception_common.so
+else
+  ifneq ($(HAVE_PCL),1)
+    WARN_TARGETS += warning_pcl
+  endif
+  ifneq ($(HAVE_TF),1)
     WARN_TARGETS += warning_tf
   endif
-else
-  WARN_TARGETS += warning_pcl
 endif
 
 
