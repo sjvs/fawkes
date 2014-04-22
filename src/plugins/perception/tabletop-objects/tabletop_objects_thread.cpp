@@ -1012,7 +1012,11 @@ TabletopObjectsThread::loop()
       TIMETRACK_END(ttc_transform_model_);
     }
     else { // !cfg_table_model_enable_
-      set_position(table_pos_if_, true, table_centroid);
+      Eigen::Vector3f normal;
+      normal[0] = coeff->values[0];
+      normal[1] = coeff->values[1];
+      normal[2] = coeff->values[2];
+      set_position(table_pos_if_, true, table_centroid, normal_to_quaternion(normal));
     }
 
   } catch (Exception &e) {
@@ -1981,6 +1985,13 @@ TabletopObjectsThread::track_objects(
     }
     return final_assignment;
   }
+}
+
+Eigen::Quaternionf TabletopObjectsThread::normal_to_quaternion(Eigen::Vector3f normal,
+  Eigen::Vector3f reference ) {
+  Eigen::Quaternionf quat;
+  quat.setFromTwoVectors(reference, normal);
+  return quat;
 }
 
 #ifdef HAVE_VISUAL_DEBUGGING

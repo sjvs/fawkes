@@ -161,6 +161,8 @@ class TabletopObjectsThread
   double compute_similarity(double d1, double d2);
 
   void convert_colored_input();
+  Eigen::Quaternionf normal_to_quaternion(Eigen::Vector3f normal,
+    Eigen::Vector3f reference = Eigen::Vector3f(0.f, 0.f, 1.f));
 
   std::vector<pcl::PointIndices> extract_object_clusters(CloudConstPtr input);
 
