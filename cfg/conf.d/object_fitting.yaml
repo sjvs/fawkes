@@ -1,0 +1,19 @@
+%YAML 1.2
+%TAG ! tag:fawkesrobotics.org,cfg/
+---
+doc-url: !url http://trac.fawkesrobotics.org/wiki/Plugins/tabletop-objects
+---
+perception/object-fitting:
+  # Input
+  input_pointclouds: "obj_cluster_*"
+
+  # Output prefix, an identifier will be appended
+  # (e.g. 'Fitted Object' results in 'Fitted Object 5')
+  output_prefix: "Fitted Object"
+
+  # The input is a XYZ RGB point cloud
+  # input will be converted to XYZ point cloud
+  use_colored_input: true
+
+  # Print fitting results
+  verbose: false

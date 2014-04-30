@@ -20,11 +20,12 @@ include $(BUILDSYSDIR)/fvconf.mk
 
 SUBDIRS = base fountain retriever tabletop-objects pcl-db \
 	tabletop-recognition object-recognition common tabletop-visualization \
-	object-tracking
+	object-tracking object-fitting
 
 tabletop-recognition: common
 object-recognition: common
 object-tracking: common
+object-fitting: common
 tabletop-visualization: common
 include $(BUILDSYSDIR)/rules.mk
 

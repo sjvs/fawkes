@@ -62,6 +62,7 @@ Eigen::Quaternionf normal_to_quaternion(Eigen::Vector3f normal,
   Eigen::Vector3f reference = Eigen::Vector3f(0.f, 0.f, 1.f));
 Eigen::Vector3f quaternion_to_normal(Eigen::Quaternionf quat,
   Eigen::Vector3f reference = Eigen::Vector3f(0.f, 0.f, 1.f));
+void convert_colored_input(ColorCloudConstPtr input, CloudPtr output);
 
 }
 }

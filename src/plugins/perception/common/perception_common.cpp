@@ -106,5 +106,27 @@ Eigen::Vector3f quaternion_to_normal(Eigen::Quaternionf quat,
   return quat._transformVector(reference);
 }
 
+void convert_colored_input(ColorCloudConstPtr input, CloudPtr output)
+{
+  output->header.seq      = input->header.seq;
+  output->header.frame_id = input->header.frame_id;
+  output->header.stamp    = input->header.stamp;
+  output->width           = input->width;
+  output->height          = input->height;
+  output->is_dense        = input->is_dense;
+
+  const size_t size = input->points.size();
+  output->points.resize(size);
+  for (size_t i = 0; i < size; ++i) {
+    const ColorPointType &in = input->points[i];
+    PointType &out           = output->points[i];
+
+    out.x = in.x;
+    out.y = in.y;
+    out.z = in.z;
+  }
+}
+
+
 } // namespace perception
 } // namespace fawkes
