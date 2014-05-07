@@ -1,5 +1,5 @@
 /***************************************************************************
- *  object_recognition_thread.cpp - Object Recognition Plugin
+ *  object_detection_thread.cpp - Object Detection Plugin
  *
  *  Created: Tue Apr 15 17:04:45 2014
  *  Copyright  2014  Till Hofmann
@@ -19,7 +19,7 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#include "object_recognition_thread.h"
+#include "object_detection_thread.h"
 #include "../common/cluster_colors.h"
 #include "../common/perception_common.h"
 
@@ -39,27 +39,27 @@ using namespace std;
 using namespace fawkes;
 using namespace fawkes::perception;
 
-#define CFG_PREFIX "/perception/object-recognition/"
+#define CFG_PREFIX "/perception/object-detection/"
 
-/** @class ObjectRecognitionThread "object_recognition_thread.h"
+/** @class ObjectDetectionThread "object_detection_thread.h"
  * Thread to detect objects in a pointcloud
  * @author Till Hofmann
  */
 
 /** Constructor. */
-ObjectRecognitionThread::ObjectRecognitionThread()
-: Thread("ObjectRecognitionThread", Thread::OPMODE_WAITFORWAKEUP),
+ObjectDetectionThread::ObjectDetectionThread()
+: Thread("ObjectDetectionThread", Thread::OPMODE_WAITFORWAKEUP),
   BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS),
   TransformAspect(TransformAspect::ONLY_LISTENER)
 {
 }
 
-ObjectRecognitionThread::~ObjectRecognitionThread()
+ObjectDetectionThread::~ObjectDetectionThread()
 {
 }
 
 void
-ObjectRecognitionThread::init()
+ObjectDetectionThread::init()
 {
   cfg_cluster_tolerance_     = config->get_float(CFG_PREFIX"cluster_tolerance");
   cfg_cluster_min_size_      = config->get_uint(CFG_PREFIX"cluster_min_size");
@@ -127,7 +127,7 @@ ObjectRecognitionThread::init()
   try {
     table_pos_if_ = blackboard->open_for_reading<Position3DInterface>("Tabletop");
   } catch (Exception &e) {
-    logger->log_error(name(), "Tabletop position interface doesn't exist. Did you load the tabletop-recognition plugin?");
+    logger->log_error(name(), "Tabletop position interface doesn't exist. Did you load the tabletop-detection plugin?");
     throw;
   }
 
@@ -135,7 +135,7 @@ ObjectRecognitionThread::init()
 }
 
 void
-ObjectRecognitionThread::finalize()
+ObjectDetectionThread::finalize()
 {
   input_.reset();
   for (vector<ColorCloudPtr>::iterator it = obj_clusters_.begin();
@@ -167,11 +167,11 @@ ObjectRecognitionThread::finalize()
 }
 
 void
-ObjectRecognitionThread::loop()
+ObjectDetectionThread::loop()
 {
   table_pos_if_->read();
   if (table_pos_if_->visibility_history() < 0) {
-    logger->log_debug(name(), "No tabletop. Aborting object recognition.");
+    logger->log_debug(name(), "No tabletop. Aborting object detection.");
     return;
   }
   CloudPtr cloud_objs_(new Cloud(*input_));
@@ -225,7 +225,7 @@ ObjectRecognitionThread::loop()
 }
 
 unsigned int
-ObjectRecognitionThread::cluster_objects(CloudConstPtr input_cloud,
+ObjectDetectionThread::cluster_objects(CloudConstPtr input_cloud,
     ColorCloudPtr tmp_clusters,
     std::vector<ColorCloudPtr> &tmp_obj_clusters) {
   unsigned int object_count = 0;
@@ -334,7 +334,7 @@ pcl_utils::transform_pointcloud("/base_link", *single_cluster,
 }
 
 void
-ObjectRecognitionThread::set_position(fawkes::Position3DInterface *iface,
+ObjectDetectionThread::set_position(fawkes::Position3DInterface *iface,
                                     bool is_visible,
                                     const Eigen::Vector4f &centroid,
                                     const Eigen::Quaternionf &attitude,
@@ -356,7 +356,7 @@ ObjectRecognitionThread::set_position(fawkes::Position3DInterface *iface,
 }
 
 std::vector<pcl::PointIndices>
-ObjectRecognitionThread::extract_object_clusters(CloudConstPtr input) {
+ObjectDetectionThread::extract_object_clusters(CloudConstPtr input) {
   TIMETRACK_START(ttc_obj_extraction_);
   std::vector<pcl::PointIndices> cluster_indices;
   if (input->empty()) {
@@ -383,7 +383,7 @@ ObjectRecognitionThread::extract_object_clusters(CloudConstPtr input) {
 }
 
 void
-ObjectRecognitionThread::delete_high_centroids(Eigen::Vector4f table_centroid,
+ObjectDetectionThread::delete_high_centroids(Eigen::Vector4f table_centroid,
   CentroidMap &centroids) {
   tf::Stamped<tf::Point> sp_baserel_table;
   tf::Stamped<tf::Point> sp_table(

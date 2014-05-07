@@ -1,5 +1,5 @@
 #*****************************************************************************
-#         Makefile Build System for Fawkes: Object Recognition Plugin
+#         Makefile Build System for Fawkes: Object Detection Plugin
 #                            -------------------
 #   Created on Tue Apr 15 17:11:17 2014
 #   Copyright (C) 2014 by Till Hofmann
@@ -35,13 +35,13 @@ endif
 # Enable for time measurements
 #CFLAGS += -DUSE_TIMETRACKER
 
-LIBS_object_recognition = stdc++ fawkescore fawkesutils fawkesaspects fvutils \
+LIBS_object_detection = stdc++ fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard fawkespcl_utils \
 			Position3DInterface SwitchInterface \
 			fawkesperception_common
-OBJS_object_recognition = object_recognition_plugin.o object_recognition_thread.o
+OBJS_object_detection = object_detection_plugin.o object_detection_thread.o
 
-OBJS_all    = $(OBJS_object_recognition)
+OBJS_all    = $(OBJS_object_detection)
 
 ifneq ($(CC)$(GCC_TOO_OLD),gcc1)
   ifeq ($(HAVE_PERCEPTION_COMMON)$(HAVE_PCL)$(HAVE_TF),111)
@@ -53,7 +53,7 @@ ifneq ($(CC)$(GCC_TOO_OLD),gcc1)
       LDFLAGS += $(LDFLAGS_TF) $(LDFLAGS_PCL) \
 	         $(call pcl-libs-ldflags,$(REQUIRED_PCL_LIBS))
 
-      PLUGINS_all = $(PLUGINDIR)/object-recognition.$(SOEXT)
+      PLUGINS_all = $(PLUGINDIR)/object-detection.$(SOEXT)
     else
       WARN_TARGETS += warning_pcl_components
     endif
@@ -88,15 +88,15 @@ all: $(WARN_TARGETS)
 
 .PHONY: warning_tf warning_pcl warning_old_gcc warning_pcl_components warning_perception_common
 warning_tf:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object recognition plugin$(TNORMAL) (fawkestf not available)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object detection plugin$(TNORMAL) (fawkestf not available)"
 warning_pcl:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object recognition plugin$(TNORMAL) (PCL not available)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object detection plugin$(TNORMAL) (PCL not available)"
 warning_old_gcc:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object recognition plugin$(TNORMAL) (GCC too old, have $(GCC_VERSION), required 4.5)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object detection plugin$(TNORMAL) (GCC too old, have $(GCC_VERSION), required 4.5)"
 warning_pcl_components:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object recognition plugin$(TNORMAL) (missing PCL components: $(call pcl-missing-libs,$(REQUIRED_PCL_LIBS)))"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object detection plugin$(TNORMAL) (missing PCL components: $(call pcl-missing-libs,$(REQUIRED_PCL_LIBS)))"
 warning_perception_common:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object recognition plugin$(TNORMAL) (perception common library not available)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting object detection plugin$(TNORMAL) (perception common library not available)"
 
 endif
 

@@ -19,11 +19,11 @@ include $(BASEDIR)/etc/buildsys/config.mk
 include $(BUILDSYSDIR)/fvconf.mk
 
 SUBDIRS = base fountain retriever tabletop-objects pcl-db \
-	tabletop-detection object-recognition common tabletop-visualization \
+	tabletop-detection object-detection common tabletop-visualization \
 	object-tracking object-fitting
 
 tabletop-detection: common
-object-recognition: common
+object-detection: common
 object-tracking: common
 object-fitting: common
 tabletop-visualization: common

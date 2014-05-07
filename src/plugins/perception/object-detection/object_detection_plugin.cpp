@@ -1,5 +1,5 @@
 /***************************************************************************
- *  object_recognition_plugin.cpp - Object Recognition Plugin
+ *  object_detection_plugin.cpp - Object Detection Plugin
  *
  *  Created: Tue Apr 15 16:59:22 2014
  *  Copyright  2014  Till Hofmann
@@ -22,26 +22,26 @@
 
 #include <core/plugin.h>
 
-#include "object_recognition_thread.h"
+#include "object_detection_thread.h"
 
 using namespace fawkes;
 
 /** Plugin to detect objects in a pointcloud
- * This plugin is part of the tabletop object recognition plugins
+ * This plugin is part of the tabletop object detection plugins
  * @author Till Hofmann
  */
-class ObjectRecognitionPlugin : public fawkes::Plugin
+class ObjectDetectionPlugin : public fawkes::Plugin
 {
  public:
   /** Constructor.
    * @param config Fawkes configuration
    */
-  ObjectRecognitionPlugin(Configuration *config)
+  ObjectDetectionPlugin(Configuration *config)
     : Plugin(config)
   {
-    thread_list.push_back(new ObjectRecognitionThread());
+    thread_list.push_back(new ObjectDetectionThread());
   }
 };
 
 PLUGIN_DESCRIPTION("Plugin to detect objects in a pointcloud")
-EXPORT_PLUGIN(ObjectRecognitionPlugin)
+EXPORT_PLUGIN(ObjectDetectionPlugin)

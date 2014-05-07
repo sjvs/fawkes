@@ -1,5 +1,5 @@
 /***************************************************************************
- *  object_recognition_thread.h - Object Recognition Plugin
+ *  object_detection_thread.h - Object Detection Plugin
  *
  *  Created: Tue Apr 15 17:03:14 2014
  *  Copyright  2014  Till Hofmann
@@ -19,8 +19,8 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#ifndef __PLUGINS_PERCEPTION_OBJECT_RECOGNITION_THREAD_H_
-#define __PLUGINS_PERCEPTION_OBJECT_RECOGNITION_THREAD_H_
+#ifndef __PLUGINS_PERCEPTION_OBJECT_DETECTION_THREAD_H_
+#define __PLUGINS_PERCEPTION_OBJECT_DETECTION_THREAD_H_
 
 // must be first for reliable ROS detection
 #include <pcl/point_cloud.h>
@@ -53,7 +53,7 @@ namespace fawkes {
 #endif
 }
 
-/** @class OldCentroid "object_recognition_thread.h"
+/** @class OldCentroid "object_detection_thread.h"
  * This class is used to save old centroids in order to check for reappearance
  * @author Till Hofmann
  */
@@ -96,7 +96,7 @@ protected:
 };
 
 
-class ObjectRecognitionThread
+class ObjectDetectionThread
 : public fawkes::Thread,
   public fawkes::ClockAspect,
   public fawkes::LoggingAspect,
@@ -107,8 +107,8 @@ class ObjectRecognitionThread
   public fawkes::PointCloudAspect
 {
  public:
-  ObjectRecognitionThread();
-  virtual ~ObjectRecognitionThread();
+  ObjectDetectionThread();
+  virtual ~ObjectDetectionThread();
 
   virtual void init();
   virtual void loop();

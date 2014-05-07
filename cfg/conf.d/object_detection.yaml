@@ -3,7 +3,7 @@
 ---
 doc-url: !url http://trac.fawkesrobotics.org/wiki/Plugins/tabletop-objects
 ---
-perception/object-recognition:
+perception/object-detection:
   # ID of input point cloud
   input_pointcloud: objects
 
