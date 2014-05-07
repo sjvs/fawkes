@@ -1,5 +1,5 @@
 /***************************************************************************
- *  tabletop_recognition_plugin.cpp - Tabletop Recognition Plugin
+ *  tabletop_detection_plugin.cpp - Tabletop Detection Plugin
  *
  *  Created: Thu Apr 10 14:31:56 2014
  *  Copyright  2014  Till Hofmann
@@ -22,7 +22,7 @@
 
 #include <core/plugin.h>
 
-#include "tabletop_recognition_thread.h"
+#include "tabletop_detection_thread.h"
 //#ifdef HAVE_VISUAL_DEBUGGING
 //#  include "../tabletop-visualization/visualization_thread.h"
 //#endif
@@ -30,19 +30,19 @@
 using namespace fawkes;
 
 /** Plugin to recognize a tabletop in a pointcloud input
- * This plugin is part of the tabletop object recognition plugins
+ * This plugin is part of the tabletop object detection plugins
  * @author Till Hofmann
  */
-class TabletopRecognitionPlugin : public fawkes::Plugin
+class TabletopDetectionPlugin : public fawkes::Plugin
 {
  public:
   /** Constructor.
    * @param config Fawkes configuration
    */
-    TabletopRecognitionPlugin(Configuration *config)
+    TabletopDetectionPlugin(Configuration *config)
     : Plugin(config)
   {
-    thread_list.push_back(new TabletopRecognitionThread());
+    thread_list.push_back(new TabletopDetectionThread());
 //#ifdef HAVE_VISUAL_DEBUGGING
 //    TabletopVisualizationThread *visthr = new TabletopVisualizationThread();
 //    tabobjthr->set_visualization_thread(visthr);
@@ -52,4 +52,4 @@ class TabletopRecognitionPlugin : public fawkes::Plugin
 };
 
 PLUGIN_DESCRIPTION("Plugin to detect a tabletop in a pointcloud")
-EXPORT_PLUGIN(TabletopRecognitionPlugin)
+EXPORT_PLUGIN(TabletopDetectionPlugin)

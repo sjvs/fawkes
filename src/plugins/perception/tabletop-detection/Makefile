@@ -1,5 +1,5 @@
 #*****************************************************************************
-#         Makefile Build System for Fawkes: Tabletop Recognition Plugin
+#         Makefile Build System for Fawkes: Tabletop Detection Plugin
 #                            -------------------
 #   Created on Thu Apr 10 15:22:42 2014
 #   Copyright (C) 2014 by Till Hofmann
@@ -36,13 +36,13 @@ endif
 # Enable for time measurements
 #CFLAGS += -DUSE_TIMETRACKER
 
-LIBS_tabletop_recognition = fawkescore fawkesutils fawkesaspects fvutils \
+LIBS_tabletop_detection = fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard fawkespcl_utils \
 			Position3DInterface SwitchInterface \
 			fawkesperception_common
-OBJS_tabletop_recognition = tabletop_recognition_plugin.o tabletop_recognition_thread.o
+OBJS_tabletop_detection = tabletop_detection_plugin.o tabletop_detection_thread.o
 
-OBJS_all    = $(OBJS_tabletop_recognition)
+OBJS_all    = $(OBJS_tabletop_detection)
 
 ifneq ($(CC)$(GCC_TOO_OLD),gcc1)
   ifeq ($(HAVE_PERCEPTION_COMMON)$(HAVE_PCL)$(HAVE_TF),111)
@@ -54,7 +54,7 @@ ifneq ($(CC)$(GCC_TOO_OLD),gcc1)
       LDFLAGS += $(LDFLAGS_TF) $(LDFLAGS_PCL) \
 	         $(call pcl-libs-ldflags,$(REQUIRED_PCL_LIBS))
 
-      PLUGINS_all = $(PLUGINDIR)/tabletop-recognition.$(SOEXT)
+      PLUGINS_all = $(PLUGINDIR)/tabletop-detection.$(SOEXT)
     else
       WARN_TARGETS += warning_pcl_components
     endif
@@ -89,15 +89,15 @@ all: $(WARN_TARGETS)
 
 .PHONY: warning_old_gcc warning_perception_common warning_tf warning_pcl warning_pcl_components
 warning_old_gcc:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop recognition plugin$(TNORMAL) (GCC too old, have $(GCC_VERSION), required 4.5)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop detection plugin$(TNORMAL) (GCC too old, have $(GCC_VERSION), required 4.5)"
 warning_perception_common:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop recognition plugin$(TNORMAL) (perception common library not available)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop detection plugin$(TNORMAL) (perception common library not available)"
 warning_tf:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop recognition plugin$(TNORMAL) (fawkestf not available)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop detection plugin$(TNORMAL) (fawkestf not available)"
 warning_pcl:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop recognition plugin$(TNORMAL) (PCL not available)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop detection plugin$(TNORMAL) (PCL not available)"
 warning_pcl_components:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop recognition plugin$(TNORMAL) (missing PCL components: $(call pcl-missing-libs,$(REQUIRED_PCL_LIBS)))"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting tabletop detection plugin$(TNORMAL) (missing PCL components: $(call pcl-missing-libs,$(REQUIRED_PCL_LIBS)))"
 endif
 
 include $(BUILDSYSDIR)/base.mk

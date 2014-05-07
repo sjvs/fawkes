@@ -1,5 +1,5 @@
 /***************************************************************************
- *  tabletop_recognition_thread.h - Tabletop Recognition Plugin
+ *  tabletop_detection_thread.h - Tabletop Detection Plugin
  *
  *  Created: Thu Apr 10 14:34:22 2014
  *  Copyright  2014  Till Hofmann
@@ -19,8 +19,8 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#ifndef __PLUGINS_PERCEPTION_TABLETOP_RECOGNITION_THREAD_H_
-#define __PLUGINS_PERCEPTION_TABLETOP_RECOGNITION_THREAD_H_
+#ifndef __PLUGINS_PERCEPTION_TABLETOP_DETECTION_THREAD_H_
+#define __PLUGINS_PERCEPTION_TABLETOP_DETECTION_THREAD_H_
 
 // must be first for reliable ROS detection
 #include <pcl/point_cloud.h>
@@ -53,7 +53,7 @@ namespace fawkes {
 #endif
 }
 
-class TabletopRecognitionThread
+class TabletopDetectionThread
 : public fawkes::Thread,
   public fawkes::ClockAspect,
   public fawkes::LoggingAspect,
@@ -64,8 +64,8 @@ class TabletopRecognitionThread
   public fawkes::PointCloudAspect
 {
  public:
-  TabletopRecognitionThread();
-  virtual ~TabletopRecognitionThread();
+  TabletopDetectionThread();
+  virtual ~TabletopDetectionThread();
 
   virtual void init();
   virtual void loop();

@@ -1,5 +1,5 @@
 /***************************************************************************
- *  tabletop_recognition_thread.cpp - Tabletop Recognition Plugin
+ *  tabletop_detection_thread.cpp - Tabletop Detection Plugin
  *
  *  Created: Thu Apr 10 14:38:52 2014
  *  Copyright  2014  Till Hofmann
@@ -19,7 +19,7 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#include "tabletop_recognition_thread.h"
+#include "tabletop_detection_thread.h"
 #include "../common/cluster_colors.h"
 #include "../common/perception_common.h"
 
@@ -46,27 +46,27 @@ using namespace std;
 using namespace fawkes;
 using namespace fawkes::perception;
 
-#define CFG_PREFIX "/perception/tabletop-recognition/"
+#define CFG_PREFIX "/perception/tabletop-detection/"
 
-/** @class TabletopRecognitionThread "tabletop_recognition_thread.h"
+/** @class TabletopDetectionThread "tabletop_detection_thread.h"
  * Thread to detect a tabletop in a pointcloud
  * @author Till Hofmann
  */
 
 /** Constructor. */
-TabletopRecognitionThread::TabletopRecognitionThread()
-  : Thread("TabletopRecognitionThread", Thread::OPMODE_WAITFORWAKEUP),
+TabletopDetectionThread::TabletopDetectionThread()
+  : Thread("TabletopDetectionThread", Thread::OPMODE_WAITFORWAKEUP),
     BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS)
 {
 }
 
 /** Destructor. */
-TabletopRecognitionThread::~TabletopRecognitionThread()
+TabletopDetectionThread::~TabletopDetectionThread()
 {
 }
 
 void
-TabletopRecognitionThread::init()
+TabletopDetectionThread::init()
 {
   cfg_depth_filter_min_x_         = config->get_float(CFG_PREFIX"depth_filter_min_x");
   cfg_depth_filter_max_x_         = config->get_float(CFG_PREFIX"depth_filter_max_x");
@@ -118,7 +118,7 @@ TabletopRecognitionThread::init()
     table_pos_if_->set_rotation(rotation);
     table_pos_if_->write();
 
-    switch_if_ = blackboard->open_for_writing<SwitchInterface>("tabletop-recognition");
+    switch_if_ = blackboard->open_for_writing<SwitchInterface>("tabletop-detection");
     switch_if_->set_enabled(true);
     switch_if_->write();
 
@@ -187,7 +187,7 @@ TabletopRecognitionThread::init()
 }
 
 void
-TabletopRecognitionThread::finalize()
+TabletopDetectionThread::finalize()
 {
   input_.reset();
   simplified_polygon_.reset();
@@ -211,7 +211,7 @@ TabletopRecognitionThread::finalize()
 }
 
 void
-TabletopRecognitionThread::loop()
+TabletopDetectionThread::loop()
 {
   TIMETRACK_START(ttc_full_loop_);
 
@@ -962,7 +962,7 @@ TabletopRecognitionThread::loop()
 // 1. the existing current best is clearly closer in base-relative X direction
 // 2. the existing current best is longer
 bool
-TabletopRecognitionThread::is_polygon_edge_better(PointType &cb_br_p1p, PointType &cb_br_p2p,
+TabletopDetectionThread::is_polygon_edge_better(PointType &cb_br_p1p, PointType &cb_br_p2p,
                                               PointType &br_p1p, PointType &br_p2p)
 {
   // current best base-relative points
@@ -987,7 +987,7 @@ TabletopRecognitionThread::is_polygon_edge_better(PointType &cb_br_p1p, PointTyp
 }
 
 void
-TabletopRecognitionThread::convert_colored_input()
+TabletopDetectionThread::convert_colored_input()
 {
   converted_input_->header.seq      = colored_input_->header.seq;
   converted_input_->header.frame_id = colored_input_->header.frame_id;
@@ -1009,7 +1009,7 @@ TabletopRecognitionThread::convert_colored_input()
 }
 
 void
-TabletopRecognitionThread::set_position(fawkes::Position3DInterface *iface,
+TabletopDetectionThread::set_position(fawkes::Position3DInterface *iface,
                                     bool is_visible,
                                     const Eigen::Vector4f &centroid,
                                     const Eigen::Quaternionf &attitude,
@@ -1031,7 +1031,7 @@ TabletopRecognitionThread::set_position(fawkes::Position3DInterface *iface,
 }
 
 CloudPtr
-TabletopRecognitionThread::simplify_polygon(CloudPtr polygon, float dist_threshold)
+TabletopDetectionThread::simplify_polygon(CloudPtr polygon, float dist_threshold)
 {
   const float sqr_dist_threshold = dist_threshold * dist_threshold;
   CloudPtr result(new Cloud());
@@ -1079,7 +1079,7 @@ TabletopRecognitionThread::simplify_polygon(CloudPtr polygon, float dist_thresho
 
 
 CloudPtr
-TabletopRecognitionThread::generate_table_model(const float length, const float width,
+TabletopDetectionThread::generate_table_model(const float length, const float width,
                                             const float thickness, const float step,
                                             const float max_error)
 {
@@ -1131,7 +1131,7 @@ TabletopRecognitionThread::generate_table_model(const float length, const float 
 }
 
 CloudPtr
-TabletopRecognitionThread::generate_table_model(const float length, const float width,
+TabletopDetectionThread::generate_table_model(const float length, const float width,
                                             const float step, const float max_error)
 {
   CloudPtr c(new Cloud());
