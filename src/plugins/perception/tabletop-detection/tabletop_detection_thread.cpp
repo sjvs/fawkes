@@ -955,6 +955,13 @@ TabletopDetectionThread::loop()
   TIMETRACK_END(ttc_table_to_output_);
 
   TIMETRACK_END(ttc_full_loop_);
+
+#ifdef USE_TIMETRACKER
+  if (++tt_loopcount_ >= 5) {
+    tt_loopcount_ = 0;
+    tt_->print_to_stdout();
+  }
+#endif
 }
 
 
