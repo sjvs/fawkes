@@ -132,6 +132,14 @@ ObjectDetectionThread::init()
   }
 
   centroids_.clear();
+
+#ifdef USE_TIMETRACKER
+  tt_ = new TimeTracker();
+  tt_loopcount_ = 0;
+  ttc_full_loop_      = tt_->add_class("Full Loop");
+  ttc_obj_extraction_ = tt_->add_class("Object Extraction");
+#endif
+
 }
 
 void
@@ -169,6 +177,9 @@ ObjectDetectionThread::finalize()
 void
 ObjectDetectionThread::loop()
 {
+
+  TIMETRACK_START(ttc_full_loop_);
+
   table_pos_if_->read();
   if (table_pos_if_->visibility_history() < 0) {
     logger->log_debug(name(), "No tabletop. Aborting object detection.");
@@ -207,7 +218,6 @@ ObjectDetectionThread::loop()
       set_position(pos_ifs_[it->first], true, it->second, Eigen::Quaternionf(1, 0, 0, 0), "/base_link");
     }
 
-    TIMETRACK_START(ttc_visualization_);
     for (unsigned int i = 0; i < f_obj_clusters_.size(); i++) {
       if (centroids_.count(i)) {
         *obj_clusters_[i] = *tmp_obj_clusters[i];
@@ -222,6 +232,13 @@ ObjectDetectionThread::loop()
       pcl_utils::copy_time(input_, f_obj_clusters_[i]);
     }
 
+    TIMETRACK_END(ttc_full_loop_);
+#ifdef USE_TIMETRACKER
+  if (++tt_loopcount_ >= 5) {
+    tt_loopcount_ = 0;
+    tt_->print_to_stdout();
+  }
+#endif
 }
 
 unsigned int

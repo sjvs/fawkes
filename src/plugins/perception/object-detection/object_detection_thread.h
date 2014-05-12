@@ -161,10 +161,6 @@ class ObjectDetectionThread
   fawkes::TimeTracker  *tt_;
   unsigned int tt_loopcount_;
   unsigned int ttc_full_loop_;
-  unsigned int ttc_cluster_objects_;
-  unsigned int ttc_visualization_;
-  unsigned int ttc_hungarian_;
-  unsigned int ttc_old_centroids_;
   unsigned int ttc_obj_extraction_;
 #endif
 };
