@@ -24,7 +24,8 @@ REQUIRED_PCL_LIBS = registration
 
 LIBS_object_tracking = stdc++ fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard \
-			Position3DInterface SwitchInterface fawkesperception_common
+			Position3DInterface SwitchInterface fawkesperception_common \
+			fawkessyncpoint
 
 OBJS_object_tracking = object_tracking_plugin.o object_tracking_thread.o
 

@@ -23,7 +23,7 @@ include $(BUILDCONFDIR)/tf/tf.mk
 
 LIBS_tabletop_visualization = fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard \
-			Position3DInterface fawkesperception_common
+			Position3DInterface fawkesperception_common fawkessyncpoint
 
 OBJS_tabletop_visualization = visualization_plugin.o visualization_thread.o
 

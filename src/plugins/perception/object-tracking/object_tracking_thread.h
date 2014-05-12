@@ -28,6 +28,7 @@
 #include <aspect/logging.h>
 #include <aspect/blackboard.h>
 #include <aspect/blocked_timing.h>
+#include <aspect/syncpoint_manager.h>
 
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
@@ -41,6 +42,7 @@
 
 namespace fawkes {
   class Position3DInterface;
+  class SyncPoint;
 }
 
 /** @class OldCentroid "tabletop_objects_thread.h"
@@ -90,7 +92,8 @@ class ObjectTrackingThread
   public fawkes::LoggingAspect,
   public fawkes::ConfigurableAspect,
   public fawkes::BlackBoardAspect,
-  public fawkes::BlockedTimingAspect
+  public fawkes::BlockedTimingAspect,
+  public fawkes::SyncPointManagerAspect
 {
  public:
   ObjectTrackingThread();
@@ -127,12 +130,18 @@ class ObjectTrackingThread
   OldCentroidVector old_centroids_;
   std::string frame_id_;
 
+  /* synchronization */
+  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_in_;
+  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_out_;
+
   /* configuration */
   uint cfg_centroid_max_age_;
   float cfg_centroid_max_distance_;
   float cfg_centroid_min_distance_;
   std::string cfg_ifs_in_;
   std::string cfg_ifs_out_;
+  std::string cfg_syncpoint_in_;
+  std::string cfg_syncpoint_out_;
 
 };
 

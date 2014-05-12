@@ -17,3 +17,8 @@ perception/object-fitting:
 
   # Print fitting results
   verbose: false
+
+  # SyncPoint to wait for at the beginning of the loop
+  syncpoint_in: "/perception/object-detection"
+  # SyncPoint to emit at the end of the loop
+  syncpoint_out: "/perception/object-fitting"

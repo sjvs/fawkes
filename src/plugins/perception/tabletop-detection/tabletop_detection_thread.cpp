@@ -90,6 +90,7 @@ TabletopDetectionThread::init()
   cfg_input_pointcloud_           = config->get_string(CFG_PREFIX"input_pointcloud");
   cfg_cluster_min_size_           = config->get_uint(CFG_PREFIX"cluster_min_size");
   cfg_object_pointcloud_          = config->get_string(CFG_PREFIX"object_pointcloud");
+  cfg_syncpoint_                  = config->get_string(CFG_PREFIX"syncpoint");
 
   if (pcl_manager->exists_pointcloud<PointType>(cfg_input_pointcloud_.c_str())) {
     finput_ = pcl_manager->get_pointcloud<PointType>(cfg_input_pointcloud_.c_str());
@@ -164,6 +165,8 @@ TabletopDetectionThread::init()
 
   last_pcl_time_ = new Time(clock);
 
+  syncpoint_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_.c_str());
+
 #ifdef USE_TIMETRACKER
   tt_ = new TimeTracker();
   tt_loopcount_ = 0;
@@ -208,6 +211,8 @@ TabletopDetectionThread::finalize()
   fsimplified_polygon_.reset();
   fobjects_.reset();
   ftable_cluster_.reset();
+
+  syncpoint_manager->release_syncpoint(name(), syncpoint_);
 }
 
 void
@@ -953,6 +958,8 @@ TabletopDetectionThread::loop()
   pcl_utils::copy_time(finput_, ftable_cluster_);
 
   TIMETRACK_END(ttc_table_to_output_);
+
+  syncpoint_->emit(name());
 
   TIMETRACK_END(ttc_full_loop_);
 

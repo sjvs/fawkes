@@ -89,6 +89,10 @@ TabletopVisualizationThread::init()
   try {
     cfg_object_name_pattern_ = config->get_string(CFG_PREFIX_VIS"object_name_pattern");
   } catch (Exception &e) {} // ignored, use default
+  cfg_syncpoint_ = "/perception/object-detection";
+  try {
+    cfg_syncpoint_ = config->get_string(CFG_PREFIX_VIS"syncpoint");
+  } catch (Exception &e) {} // ignored, use default
 
   vispub_ = new ros::Publisher();
   *vispub_ = rosnode->advertise<visualization_msgs::MarkerArray>("visualization_marker_array", 100);
@@ -100,6 +104,8 @@ TabletopVisualizationThread::init()
 
   obj_pos_ifs_ = blackboard->open_multiple_for_reading<Position3DInterface>(cfg_object_name_pattern_.c_str());
   table_pos_if_ = blackboard->open_for_reading<Position3DInterface>("Tabletop");
+
+  syncpoint_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_.c_str());
 
 }
 
@@ -130,12 +136,16 @@ TabletopVisualizationThread::finalize()
     blackboard->close(*it);
   }
   blackboard->close(table_pos_if_);
+
+  syncpoint_manager->release_syncpoint(name(), syncpoint_);
 }
 
 
 void
 TabletopVisualizationThread::loop()
 {
+  syncpoint_->wait(name());
+
   MutexLocker lock(&mutex_);
   visualization_msgs::MarkerArray m;
 

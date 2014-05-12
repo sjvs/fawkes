@@ -6,3 +6,7 @@ doc-url: !url http://trac.fawkesrobotics.org/wiki/Plugins/tabletop-objects
 perception/visualization:
   # Input interface names (regexp)
   object_name_pattern: "Tracked Object *"
+  # SyncPoint Identifier
+  # This should be the name of the SyncPoint which is released
+  # by the last thread which is visualized
+  syncpoint: "/perception/object-tracking"

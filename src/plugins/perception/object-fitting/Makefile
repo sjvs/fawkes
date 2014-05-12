@@ -25,7 +25,7 @@ REQUIRED_PCL_LIBS = segmentation filters features
 
 LIBS_object_fitting = stdc++ fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard fawkespcl_utils \
-			Position3DInterface fawkesperception_common
+			Position3DInterface fawkesperception_common fawkessyncpoint
 
 OBJS_object_fitting = object_fitting_plugin.o object_fitting_thread.o
 

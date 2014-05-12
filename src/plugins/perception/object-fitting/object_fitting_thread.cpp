@@ -75,6 +75,8 @@ ObjectFittingThread::init()
   cfg_pointclouds_          = config->get_string(CFG_PREFIX"input_pointclouds");
   cfg_output_prefix_        = config->get_string(CFG_PREFIX"output_prefix");
   cfg_use_colored_input_    = config->get_bool(CFG_PREFIX"use_colored_input");
+  cfg_syncpoint_in_         = config->get_string(CFG_PREFIX"syncpoint_in");
+  cfg_syncpoint_out_        = config->get_string(CFG_PREFIX"syncpoint_out");
 
   // find all pointclouds
   vector<string> pointclouds = pcl_manager->get_pointcloud_list();
@@ -158,6 +160,10 @@ ObjectFittingThread::init()
   std::vector<double> init_likelihoods;
   init_likelihoods.resize(known_obj_dimensions_.size() + 1, 0.0);
   // TODO obj_likelihoods_ initialization
+
+  syncpoint_in_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_in_.c_str());
+  syncpoint_out_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_out_.c_str());
+
 }
 
 void
@@ -166,11 +172,16 @@ ObjectFittingThread::finalize()
   for (vector<Position3DInterface *>::iterator it = pos_ifs_.begin(); it != pos_ifs_.end(); it++) {
     blackboard->close(*it);
   }
+
+  syncpoint_manager->release_syncpoint(name(), syncpoint_in_);
+  syncpoint_manager->release_syncpoint(name(), syncpoint_out_);
 }
 
 void
 ObjectFittingThread::loop()
 {
+  syncpoint_in_->wait(name());
+
   if (cfg_use_colored_input_) {
     for (uint i = 0; i < input_.size(); i++) {
       CloudPtr converted_input;
@@ -205,6 +216,8 @@ ObjectFittingThread::loop()
       set_pos_interface(pos_ifs_[i], false);
     }
   }
+
+  syncpoint_out_->emit(name());
 }
 
 Eigen::Vector4f

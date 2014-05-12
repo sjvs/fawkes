@@ -56,6 +56,8 @@ ObjectTrackingThread::init()
   cfg_ifs_out_               = config->get_string(CFG_PREFIX"interfaces_out");
   cfg_centroid_min_distance_ = config->get_float(CFG_PREFIX"centroid_min_distance");
   cfg_centroid_max_age_      = config->get_uint(CFG_PREFIX"centroid_max_age");
+  cfg_syncpoint_in_          = config->get_string(CFG_PREFIX"syncpoint_in");
+  cfg_syncpoint_out_         = config->get_string(CFG_PREFIX"syncpoint_out");
 
   try {
     pos_ifs_in_ = blackboard->open_multiple_for_reading<Position3DInterface>(cfg_ifs_in_.c_str());
@@ -98,6 +100,10 @@ ObjectTrackingThread::init()
 
   centroids_.clear();
   old_centroids_.clear();
+
+  syncpoint_in_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_in_.c_str());
+  syncpoint_out_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_out_.c_str());
+
 }
 
 void
@@ -109,11 +115,16 @@ ObjectTrackingThread::finalize()
   for(vector<Position3DInterface *>::iterator it = pos_ifs_out_.begin(); it != pos_ifs_out_.end(); it++) {
     blackboard->close(*it);
   }
+
+  syncpoint_manager->release_syncpoint(name(), syncpoint_in_);
+  syncpoint_manager->release_syncpoint(name(), syncpoint_out_);
 }
 
 void
 ObjectTrackingThread::loop()
 {
+
+  syncpoint_in_->wait(name());
 
   // read the frame id from the first centroid
   // this is later used when writing the new positions to the blackboard
@@ -180,6 +191,7 @@ ObjectTrackingThread::loop()
   if (!centroids_.empty())
     first_run_ = false;
 
+  syncpoint_out_->emit(name());
 }
 
 /**

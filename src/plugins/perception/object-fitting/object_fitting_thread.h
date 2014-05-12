@@ -34,6 +34,7 @@
 #include <aspect/blocked_timing.h>
 #include <aspect/tf.h>
 #include <aspect/pointcloud.h>
+#include <aspect/syncpoint_manager.h>
 
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
@@ -49,6 +50,7 @@
 
 namespace fawkes {
   class Position3DInterface;
+  class SyncPoint;
 }
 
 class ObjectFittingThread
@@ -59,7 +61,8 @@ class ObjectFittingThread
   public fawkes::BlackBoardAspect,
   public fawkes::BlockedTimingAspect,
   public fawkes::TransformAspect,
-  public fawkes::PointCloudAspect
+  public fawkes::PointCloudAspect,
+  public fawkes::SyncPointManagerAspect
 {
  public:
   ObjectFittingThread();
@@ -88,12 +91,18 @@ class ObjectFittingThread
 
   std::vector<fawkes::Position3DInterface *> pos_ifs_;
 
+  /* synchronization */
+  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_in_;
+  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_out_;
+
   /* configuration */
   bool cfg_verbose_output_;
   std::string cfg_pointclouds_;
   std::string cfg_output_prefix_;
   bool cfg_use_colored_input_;
   std::string cfg_baselink_frame_id_;
+  std::string cfg_syncpoint_in_;
+  std::string cfg_syncpoint_out_;
 
   std::vector<fawkes::RefPtr<const pcl::PointCloud<fawkes::perception::PointType> > > finput_;
   std::vector<fawkes::perception::CloudConstPtr> input_;

@@ -34,6 +34,7 @@
 #include <aspect/blocked_timing.h>
 #include <aspect/tf.h>
 #include <aspect/pointcloud.h>
+#include <aspect/syncpoint_manager.h>
 
 #include <Eigen/StdVector>
 
@@ -48,6 +49,7 @@ namespace fawkes {
   class Position3DInterface;
   class SwitchInterface;
   class Time;
+  class SyncPoint;
 #ifdef USE_TIMETRACKER
   class TimeTracker;
 #endif
@@ -104,7 +106,8 @@ class ObjectDetectionThread
   public fawkes::BlackBoardAspect,
   public fawkes::BlockedTimingAspect,
   public fawkes::TransformAspect,
-  public fawkes::PointCloudAspect
+  public fawkes::PointCloudAspect,
+  public fawkes::SyncPointManagerAspect
 {
  public:
   ObjectDetectionThread();
@@ -149,6 +152,10 @@ class ObjectDetectionThread
   PosIfsVector pos_ifs_;
   fawkes::Position3DInterface *table_pos_if_;
 
+  /* synchronization */
+  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_in_;
+  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_out_;
+
   /* configuration */
   float cfg_cluster_tolerance_;
   unsigned int cfg_cluster_min_size_;
@@ -156,11 +163,14 @@ class ObjectDetectionThread
   std::string cfg_result_frame_;
   std::string cfg_input_pointcloud_;
   float cfg_centroid_max_height_;
+  std::string cfg_syncpoint_in_;
+  std::string cfg_syncpoint_out_;
 
 #ifdef USE_TIMETRACKER
   fawkes::TimeTracker  *tt_;
   unsigned int tt_loopcount_;
   unsigned int ttc_full_loop_;
+  unsigned int ttc_syncpoint_wait_;
   unsigned int ttc_obj_extraction_;
 #endif
 };

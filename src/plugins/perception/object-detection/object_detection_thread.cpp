@@ -67,6 +67,8 @@ ObjectDetectionThread::init()
   cfg_result_frame_          = config->get_string(CFG_PREFIX"result_frame");
   cfg_input_pointcloud_      = config->get_string(CFG_PREFIX"input_pointcloud");
   cfg_centroid_max_height_   = config->get_float(CFG_PREFIX"centroid_max_height");
+  cfg_syncpoint_in_          = config->get_string(CFG_PREFIX"syncpoint_in");
+  cfg_syncpoint_out_         = config->get_string(CFG_PREFIX"syncpoint_out");
 
   if (pcl_manager->exists_pointcloud<PointType>(cfg_input_pointcloud_.c_str())) {
      finput_ = pcl_manager->get_pointcloud<PointType>(cfg_input_pointcloud_.c_str());
@@ -133,10 +135,14 @@ ObjectDetectionThread::init()
 
   centroids_.clear();
 
+  syncpoint_in_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_in_.c_str());
+  syncpoint_out_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_out_.c_str());
+
 #ifdef USE_TIMETRACKER
   tt_ = new TimeTracker();
   tt_loopcount_ = 0;
   ttc_full_loop_      = tt_->add_class("Full Loop");
+  ttc_syncpoint_wait_ = tt_->add_class("SyncPoint Wait Call");
   ttc_obj_extraction_ = tt_->add_class("Object Extraction");
 #endif
 
@@ -172,6 +178,9 @@ ObjectDetectionThread::finalize()
       it != f_obj_clusters_.end(); it++) {
     it->reset();
   }
+
+  syncpoint_manager->release_syncpoint(name(), syncpoint_in_);
+  syncpoint_manager->release_syncpoint(name(), syncpoint_out_);
 }
 
 void
@@ -179,6 +188,10 @@ ObjectDetectionThread::loop()
 {
 
   TIMETRACK_START(ttc_full_loop_);
+
+  TIMETRACK_START(ttc_syncpoint_wait_);
+  syncpoint_in_->wait(name());
+  TIMETRACK_END(ttc_syncpoint_wait_);
 
   table_pos_if_->read();
   if (table_pos_if_->visibility_history() < 0) {
@@ -231,6 +244,8 @@ ObjectDetectionThread::loop()
       }
       pcl_utils::copy_time(input_, f_obj_clusters_[i]);
     }
+
+    syncpoint_out_->emit(name());
 
     TIMETRACK_END(ttc_full_loop_);
 #ifdef USE_TIMETRACKER

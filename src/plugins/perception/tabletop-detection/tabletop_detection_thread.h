@@ -34,9 +34,12 @@
 #include <aspect/blocked_timing.h>
 #include <aspect/pointcloud.h>
 #include <aspect/tf.h>
+#include <aspect/syncpoint_manager.h>
 
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
+
+#include <syncpoint/syncpoint.h>
 
 #include <Eigen/StdVector>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -48,6 +51,7 @@ namespace fawkes {
   class Position3DInterface;
   class SwitchInterface;
   class Time;
+  class SyncPoint;
 #ifdef USE_TIMETRACKER
   class TimeTracker;
 #endif
@@ -61,7 +65,8 @@ class TabletopDetectionThread
   public fawkes::BlackBoardAspect,
   public fawkes::BlockedTimingAspect,
   public fawkes::TransformAspect,
-  public fawkes::PointCloudAspect
+  public fawkes::PointCloudAspect,
+  public fawkes::SyncPointManagerAspect
 {
  public:
   TabletopDetectionThread();
@@ -117,6 +122,7 @@ class TabletopDetectionThread
   std::string cfg_input_pointcloud_;
   unsigned int cfg_cluster_min_size_;
   std::string cfg_object_pointcloud_;
+  std::string cfg_syncpoint_;
 
   fawkes::SwitchInterface *switch_if_;
   fawkes::Position3DInterface *table_pos_if_;
@@ -142,6 +148,9 @@ class TabletopDetectionThread
   pcl::SACSegmentation<fawkes::perception::PointType> seg_;
   fawkes::Time *last_pcl_time_;
   unsigned int loop_count_;
+
+  /* synchronization */
+  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_;
 
 #ifdef USE_TIMETRACKER
   fawkes::TimeTracker  *tt_;

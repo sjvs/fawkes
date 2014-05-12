@@ -79,3 +79,6 @@ perception/tabletop-detection:
   # Publish the object pointcloud under this name
   # The object pointcloud is the pointcloud above the table (excluding the table itself)
   object_pointcloud: "objects"
+
+  # The name of the sync point which is emitted at the end of the loop
+  syncpoint: "/perception/tabletop-detection"
