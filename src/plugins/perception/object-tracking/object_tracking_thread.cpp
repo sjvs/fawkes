@@ -281,9 +281,23 @@ ObjectTrackingThread::track_objects(
         // (then, the old centroid is assigned to the new one)
         if (pcl::distances::l2(centroids_[id], new_centroids[row])
             > cfg_centroid_max_distance_) {
-          // save the centroid because we don't use it now
+          // save the (old) centroid because we don't use it now
           old_centroids_.push_back(OldCentroid(id, centroids_[id]));
           id = -1;
+          // first check all old centroids if this is an old centroid reappearing
+          for (OldCentroidVector::iterator it = old_centroids_.begin();
+              it != old_centroids_.end(); it++) {
+            if (pcl::distances::l2(new_centroids[row], it->getCentroid())
+                <= cfg_centroid_max_distance_) {
+              id = it->getId();
+              old_centroids_.erase(it);
+              break;
+            }
+          }
+          // assign a new id if no old centroid was found
+          if (id == -1) {
+            id = next_id();
+          }
         }
       }
       final_assignment[row] = id;
