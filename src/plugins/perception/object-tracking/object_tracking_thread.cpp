@@ -126,6 +126,9 @@ ObjectTrackingThread::loop()
 
   syncpoint_in_->wait(name());
 
+  // make sure we didn't 'lose' any IDs
+  assert(old_centroids_.size() + free_ids_.size() + centroids_.size() == pos_ifs_in_.size());
+
   // read the frame id from the first centroid
   // this is later used when writing the new positions to the blackboard
   // we assume all centroids have the same frame id
