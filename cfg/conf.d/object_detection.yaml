@@ -26,3 +26,6 @@ perception/object-detection:
   syncpoint_in: "/perception/tabletop-detection"
   # SyncPoint to emit at the end of the loop
   syncpoint_out: "/perception/object-detection"
+
+  # Set to true for verbose output
+  verbose_output: false

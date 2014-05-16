@@ -122,6 +122,7 @@ class TabletopDetectionThread
   unsigned int cfg_cluster_min_size_;
   std::string cfg_object_pointcloud_;
   std::string cfg_syncpoint_;
+  bool cfg_verbose_output_;
 
   fawkes::SwitchInterface *switch_if_;
   fawkes::Position3DInterface *table_pos_if_;

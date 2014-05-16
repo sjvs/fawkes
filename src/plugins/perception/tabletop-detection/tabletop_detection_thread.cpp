@@ -92,6 +92,13 @@ TabletopDetectionThread::init()
   cfg_object_pointcloud_          = config->get_string(CFG_PREFIX"object_pointcloud");
   cfg_syncpoint_                  = config->get_string(CFG_PREFIX"syncpoint");
 
+  cfg_verbose_output_ = true;
+  try {
+    cfg_verbose_output_ = config->get_bool(CFG_PREFIX"verbose_output");
+  } catch (const Exception &e) {
+    // ignored, use default
+  }
+
   if (pcl_manager->exists_pointcloud<PointType>(cfg_input_pointcloud_.c_str())) {
     finput_ = pcl_manager->get_pointcloud<PointType>(cfg_input_pointcloud_.c_str());
     input_ = pcl_utils::cloudptr_from_refptr(finput_);
@@ -310,7 +317,8 @@ TabletopDetectionThread::loop()
     happy_with_plane = true;
 
     if (temp_cloud->points.size() <= 10) {
-      logger->log_warn(name(), "[L %u] no more points for plane detection, skipping loop", loop_count_);
+      if (cfg_verbose_output_)
+        logger->log_warn(name(), "[L %u] no more points for plane detection, skipping loop", loop_count_);
       set_position(table_pos_if_, false);
       TIMETRACK_ABORT(ttc_plane_);
       TIMETRACK_ABORT(ttc_full_loop_);
@@ -346,9 +354,11 @@ TabletopDetectionThread::loop()
       table_inclination_ = z_axis.angle(baserel_normal);
       if (fabs(z_axis.angle(baserel_normal)) > cfg_max_z_angle_deviation_) {
         happy_with_plane = false;
-        logger->log_warn(name(), "[L %u] table normal (%f,%f,%f) Z angle deviation |%f| > %f, excluding",
-                         loop_count_, baserel_normal.x(), baserel_normal.y(), baserel_normal.z(),
-                         z_axis.angle(baserel_normal), cfg_max_z_angle_deviation_);
+        if (cfg_verbose_output_) {
+          logger->log_warn(name(), "[L %u] table normal (%f,%f,%f) Z angle deviation |%f| > %f, excluding",
+              loop_count_, baserel_normal.x(), baserel_normal.y(), baserel_normal.z(),
+              z_axis.angle(baserel_normal), cfg_max_z_angle_deviation_);
+        }
       }
     } catch (Exception &e) {
       logger->log_warn(name(), "Transforming normal failed, exception follows");
@@ -376,13 +386,16 @@ TabletopDetectionThread::loop()
             (baserel_centroid.z() > cfg_table_max_height_))
         {
           happy_with_plane = false;
-          logger->log_warn(name(), "[L %u] table height %f not in range [%f, %f]",
-                           loop_count_, baserel_centroid.z(),
-                           cfg_table_min_height_, cfg_table_max_height_);
+          if (cfg_verbose_output_)
+            logger->log_warn(name(), "[L %u] table height %f not in range [%f, %f]",
+              loop_count_, baserel_centroid.z(),
+              cfg_table_min_height_, cfg_table_max_height_);
         }
       } catch (tf::TransformException &e) {
-        //logger->log_warn(name(), "Transforming centroid failed, exception follows");
-        //logger->log_warn(name(), e);
+        if (cfg_verbose_output_) {
+          logger->log_warn(name(), "Transforming centroid failed, exception follows");
+          logger->log_warn(name(), e);
+        }
       }
     }
 

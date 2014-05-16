@@ -72,6 +72,13 @@ ObjectDetectionThread::init()
   cfg_syncpoint_in_          = config->get_string(CFG_PREFIX"syncpoint_in");
   cfg_syncpoint_out_         = config->get_string(CFG_PREFIX"syncpoint_out");
 
+  cfg_verbose_output_ = true;
+  try {
+    cfg_verbose_output_ = config->get_bool(CFG_PREFIX"verbose_output");
+  } catch (const Exception &e) {
+    // ignored, use default
+  }
+
   if (pcl_manager->exists_pointcloud<PointType>(cfg_input_pointcloud_.c_str())) {
      finput_ = pcl_manager->get_pointcloud<PointType>(cfg_input_pointcloud_.c_str());
      input_ = pcl_utils::cloudptr_from_refptr(finput_);
@@ -247,7 +254,8 @@ ObjectDetectionThread::loop()
     std::vector<ColorCloudPtr> tmp_obj_clusters(MAX_CENTROIDS);
     object_count = cluster_objects(cloud_objs_, tmp_clusters, tmp_obj_clusters);
     if (object_count == 0) {
-      logger->log_info(name(), "No clustered points found");
+      if (cfg_verbose_output_)
+        logger->log_info(name(), "No clustered points found");
     }
 
     // set all pos_ifs not in centroids_ to 'not visible'
@@ -386,7 +394,8 @@ pcl_utils::transform_pointcloud("/base_link", *single_cluster,
 //      first_run_ = false;
   }
   else {
-    logger->log_info(name(), "No clustered points found");
+    if (cfg_verbose_output_)
+      logger->log_info(name(), "No clustered points found");
 //    // save all centroids to old centroids
 //    for (CentroidMap::iterator it = centroids_.begin(); it != centroids_.end(); it++) {
 //      old_centroids_.push_back(OldCentroid(it->first, it->second));

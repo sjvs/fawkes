@@ -82,3 +82,6 @@ perception/tabletop-detection:
 
   # The name of the sync point which is emitted at the end of the loop
   syncpoint: "/perception/tabletop-detection"
+
+  # Set to true for verbose output
+  verbose_output: false

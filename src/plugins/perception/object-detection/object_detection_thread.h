@@ -166,6 +166,7 @@ class ObjectDetectionThread
   float cfg_centroid_max_height_;
   std::string cfg_syncpoint_in_;
   std::string cfg_syncpoint_out_;
+  bool cfg_verbose_output_;
 
 #ifdef USE_TIMETRACKER
   fawkes::TimeTracker  *tt_;
