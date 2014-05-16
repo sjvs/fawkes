@@ -22,6 +22,9 @@
 #include "object_fitting_thread.h"
 
 #include <pcl_utils/utils.h>
+#include <utils/time/wait.h>
+
+#include <interfaces/SwitchInterface.h>
 
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/features/normal_3d.h>
@@ -126,11 +129,17 @@ ObjectFittingThread::init()
         pos_ifs_[i] = iface;
       }
     }
+
+    switch_if_ = blackboard->open_for_writing<SwitchInterface>("object-fitting");
+    switch_if_->set_enabled(true);
+    switch_if_->write();
+
   } catch (Exception &e) {
     // close all interfaces
     for (vector<Position3DInterface *>::iterator it = pos_ifs_.begin(); it != pos_ifs_.end(); it++) {
       blackboard->close(*it);
     }
+    blackboard->close(switch_if_);
     throw;
   }
 
@@ -173,6 +182,8 @@ ObjectFittingThread::finalize()
     blackboard->close(*it);
   }
 
+  blackboard->close(switch_if_);
+
   syncpoint_manager->release_syncpoint(name(), syncpoint_in_);
   syncpoint_manager->release_syncpoint(name(), syncpoint_out_);
 }
@@ -180,6 +191,28 @@ ObjectFittingThread::finalize()
 void
 ObjectFittingThread::loop()
 {
+
+  while (! switch_if_->msgq_empty()) {
+    if (SwitchInterface::EnableSwitchMessage *msg =
+        switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(true);
+      switch_if_->write();
+    } else if (SwitchInterface::DisableSwitchMessage *msg =
+               switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(false);
+      switch_if_->write();
+    }
+
+    switch_if_->msgq_pop();
+  }
+
+  if (! switch_if_->is_enabled()) {
+    TimeWait::wait(250000);
+    return;
+  }
+
   syncpoint_in_->wait(name());
 
   if (cfg_use_colored_input_) {

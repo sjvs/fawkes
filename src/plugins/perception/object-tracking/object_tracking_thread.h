@@ -123,6 +123,7 @@ class ObjectTrackingThread
  private:
   std::list<fawkes::Position3DInterface *> pos_ifs_in_;
   std::vector<fawkes::Position3DInterface *> pos_ifs_out_;
+  fawkes::SwitchInterface *switch_if_;
 
   bool first_run_;
   std::list<unsigned int> free_ids_;

@@ -25,7 +25,9 @@
 
 #include <tf/types.h>
 #include <interfaces/Position3DInterface.h>
+#include <interfaces/SwitchInterface.h>
 
+#include <utils/time/wait.h>
 #ifdef USE_TIMETRACKER
 #  include <utils/time/tracker.h>
 #endif
@@ -95,12 +97,18 @@ ObjectDetectionThread::init()
         iface->write();
       }
     }
+
+    switch_if_ = blackboard->open_for_writing<SwitchInterface>("object-detection");
+    switch_if_->set_enabled(true);
+    switch_if_->write();
+
   } catch (Exception &e) {
     for (unsigned int i = 0; i < MAX_CENTROIDS; ++i) {
       if (pos_ifs_[i]) {
         blackboard->close(pos_ifs_[i]);
       }
     }
+    blackboard->close(switch_if_);
     throw;
   }
 
@@ -168,6 +176,7 @@ ObjectDetectionThread::finalize()
   }
 
   blackboard->close(table_pos_if_);
+  blackboard->close(switch_if_);
 
   for (PosIfsVector::iterator it = pos_ifs_.begin(); it != pos_ifs_.end(); it++) {
     blackboard->close(*it);
@@ -188,6 +197,28 @@ ObjectDetectionThread::loop()
 {
 
   TIMETRACK_START(ttc_full_loop_);
+
+  while (! switch_if_->msgq_empty()) {
+    if (SwitchInterface::EnableSwitchMessage *msg =
+        switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(true);
+      switch_if_->write();
+    } else if (SwitchInterface::DisableSwitchMessage *msg =
+               switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(false);
+      switch_if_->write();
+    }
+
+    switch_if_->msgq_pop();
+  }
+
+  if (! switch_if_->is_enabled()) {
+    TimeWait::wait(250000);
+    TIMETRACK_ABORT(ttc_full_loop_);
+    return;
+  }
 
   TIMETRACK_START(ttc_syncpoint_wait_);
   syncpoint_in_->wait(name());

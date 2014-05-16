@@ -50,7 +50,6 @@
 namespace fawkes {
   class Position3DInterface;
   class SwitchInterface;
-  class Time;
   class SyncPoint;
 #ifdef USE_TIMETRACKER
   class TimeTracker;

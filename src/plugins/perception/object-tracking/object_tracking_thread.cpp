@@ -24,6 +24,7 @@
 #include <tf/types.h>
 
 #include <utils/hungarian_method/hungarian.h>
+#include <utils/time/wait.h>
 #include <pcl/registration/distances.h>
 
 using namespace std;
@@ -61,12 +62,16 @@ ObjectTrackingThread::init()
 
   try {
     pos_ifs_in_ = blackboard->open_multiple_for_reading<Position3DInterface>(cfg_ifs_in_.c_str());
+    switch_if_ = blackboard->open_for_writing<SwitchInterface>("object-tracking");
+    switch_if_->set_enabled(true);
+    switch_if_->write();
   } catch (Exception &e) {
     // close interface and rethrow
     for (list<Position3DInterface *>::iterator it = pos_ifs_in_.begin();
         it != pos_ifs_in_.end(); it++) {
       blackboard->close(*it);
     }
+    blackboard->close(switch_if_);
     throw;
   }
 
@@ -115,6 +120,8 @@ ObjectTrackingThread::finalize()
   for(vector<Position3DInterface *>::iterator it = pos_ifs_out_.begin(); it != pos_ifs_out_.end(); it++) {
     blackboard->close(*it);
   }
+  blackboard->close(switch_if_);
+
 
   syncpoint_manager->release_syncpoint(name(), syncpoint_in_);
   syncpoint_manager->release_syncpoint(name(), syncpoint_out_);
@@ -123,6 +130,27 @@ ObjectTrackingThread::finalize()
 void
 ObjectTrackingThread::loop()
 {
+
+  while (! switch_if_->msgq_empty()) {
+    if (SwitchInterface::EnableSwitchMessage *msg =
+        switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(true);
+      switch_if_->write();
+    } else if (SwitchInterface::DisableSwitchMessage *msg =
+               switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(false);
+      switch_if_->write();
+    }
+
+    switch_if_->msgq_pop();
+  }
+
+  if (! switch_if_->is_enabled()) {
+    TimeWait::wait(250000);
+    return;
+  }
 
   syncpoint_in_->wait(name());
 

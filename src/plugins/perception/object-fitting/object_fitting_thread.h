@@ -51,6 +51,7 @@
 namespace fawkes {
   class Position3DInterface;
   class SyncPoint;
+  class SwitchInterface;
 }
 
 class ObjectFittingThread
@@ -90,6 +91,8 @@ class ObjectFittingThread
   std::map<unsigned int, signed int> best_obj_guess_;
 
   std::vector<fawkes::Position3DInterface *> pos_ifs_;
+
+  fawkes::SwitchInterface *switch_if_;
 
   /* synchronization */
   fawkes::RefPtr<fawkes::SyncPoint> syncpoint_in_;

@@ -48,7 +48,6 @@
 namespace fawkes {
   class Position3DInterface;
   class SwitchInterface;
-  class Time;
   class SyncPoint;
 #ifdef USE_TIMETRACKER
   class TimeTracker;
@@ -151,6 +150,8 @@ class ObjectDetectionThread
 
   PosIfsVector pos_ifs_;
   fawkes::Position3DInterface *table_pos_if_;
+
+  fawkes::SwitchInterface *switch_if_;
 
   /* synchronization */
   fawkes::RefPtr<fawkes::SyncPoint> syncpoint_in_;
