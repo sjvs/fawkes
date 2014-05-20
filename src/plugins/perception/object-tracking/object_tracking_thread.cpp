@@ -27,6 +27,8 @@
 #include <utils/time/wait.h>
 #include <pcl/registration/distances.h>
 
+#include <libs/syncpoint/exceptions.h>
+
 using namespace std;
 using namespace fawkes;
 using namespace fawkes::perception;
@@ -152,7 +154,12 @@ ObjectTrackingThread::loop()
     return;
   }
 
-  syncpoint_in_->wait(name());
+  try {
+    syncpoint_in_->wait(name());
+  } catch (const SyncPointMultipleWaitCallsException &e) {
+    logger->log_warn(name(), "Tried to run, but already running.");
+    return;
+  }
 
   // make sure we didn't 'lose' any IDs
   assert(old_centroids_.size() + free_ids_.size() + centroids_.size() == pos_ifs_in_.size());

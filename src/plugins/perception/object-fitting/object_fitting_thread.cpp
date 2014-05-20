@@ -26,6 +26,8 @@
 
 #include <interfaces/SwitchInterface.h>
 
+#include <libs/syncpoint/exceptions.h>
+
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
@@ -213,7 +215,12 @@ ObjectFittingThread::loop()
     return;
   }
 
-  syncpoint_in_->wait(name());
+  try {
+    syncpoint_in_->wait(name());
+  } catch (const SyncPointMultipleWaitCallsException &e) {
+    logger->log_warn(name(), "Tried to run, but already running.");
+    return;
+  }
 
   if (cfg_use_colored_input_) {
     for (uint i = 0; i < input_.size(); i++) {

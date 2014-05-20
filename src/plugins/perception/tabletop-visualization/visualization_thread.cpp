@@ -27,6 +27,8 @@
 #include <utils/math/angle.h>
 #include <utils/time/wait.h>
 
+#include <libs/syncpoint/exceptions.h>
+
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
 #ifdef USE_POSEPUB
@@ -171,7 +173,12 @@ TabletopVisualizationThread::loop()
     return;
   }
 
-  syncpoint_->wait(name());
+  try {
+    syncpoint_->wait(name());
+  } catch (const SyncPointMultipleWaitCallsException &e) {
+    logger->log_warn(name(), "Tried to run, but already running.");
+    return;
+  }
 
   MutexLocker lock(&mutex_);
   visualization_msgs::MarkerArray m;

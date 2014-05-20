@@ -27,6 +27,8 @@
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
 
+#include <libs/syncpoint/exceptions.h>
+
 #include <utils/time/wait.h>
 #ifdef USE_TIMETRACKER
 #  include <utils/time/tracker.h>
@@ -228,7 +230,13 @@ ObjectDetectionThread::loop()
   }
 
   TIMETRACK_START(ttc_syncpoint_wait_);
-  syncpoint_in_->wait(name());
+  try {
+    syncpoint_in_->wait(name());
+  } catch (const SyncPointMultipleWaitCallsException &e) {
+    logger->log_warn(name(), "Tried to run, but already running.");
+    TIMETRACK_ABORT(ttc_syncpoint_wait_);
+    return;
+  }
   TIMETRACK_END(ttc_syncpoint_wait_);
 
   table_pos_if_->read();
