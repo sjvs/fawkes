@@ -25,6 +25,7 @@
 
 #include <core/threading/mutex_locker.h>
 #include <utils/math/angle.h>
+#include <utils/time/wait.h>
 
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -107,6 +108,10 @@ TabletopVisualizationThread::init()
 
   syncpoint_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_.c_str());
 
+  switch_if_ = blackboard->open_for_writing<SwitchInterface>("tabletop-visualization");
+  switch_if_->set_enabled(true);
+  switch_if_->write();
+
 }
 
 void
@@ -136,6 +141,7 @@ TabletopVisualizationThread::finalize()
     blackboard->close(*it);
   }
   blackboard->close(table_pos_if_);
+  blackboard->close(switch_if_);
 
   syncpoint_manager->release_syncpoint(name(), syncpoint_);
 }
@@ -144,6 +150,27 @@ TabletopVisualizationThread::finalize()
 void
 TabletopVisualizationThread::loop()
 {
+  while (! switch_if_->msgq_empty()) {
+    if (SwitchInterface::EnableSwitchMessage *msg =
+        switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(true);
+      switch_if_->write();
+    } else if (SwitchInterface::DisableSwitchMessage *msg =
+        switch_if_->msgq_first_safe(msg))
+    {
+      switch_if_->set_enabled(false);
+      switch_if_->write();
+    }
+
+    switch_if_->msgq_pop();
+  }
+
+  if (! switch_if_->is_enabled()) {
+    TimeWait::wait(250000);
+    return;
+  }
+
   syncpoint_->wait(name());
 
   MutexLocker lock(&mutex_);

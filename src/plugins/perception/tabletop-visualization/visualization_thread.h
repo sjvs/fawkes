@@ -39,6 +39,7 @@
 #include <aspect/syncpoint_manager.h>
 #include <plugins/ros/aspect/ros.h>
 #include <interfaces/Position3DInterface.h>
+#include <interfaces/SwitchInterface.h>
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>
@@ -52,6 +53,7 @@
 
 namespace fawkes {
   class SyncPoint;
+  class SwitchInterface;
 }
 
 namespace ros {
@@ -93,6 +95,8 @@ class TabletopVisualizationThread
 #endif
   size_t last_id_num_;
   std::string frame_id_;
+
+  fawkes::SwitchInterface *switch_if_;
 
   /* synchronization */
   fawkes::RefPtr<fawkes::SyncPoint> syncpoint_;
