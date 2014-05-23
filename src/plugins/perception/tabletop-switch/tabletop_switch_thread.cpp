@@ -77,14 +77,8 @@ TabletopSwitchThread::finalize()
 void
 TabletopSwitchThread::loop()
 {
-  loopcount_++;
 
   bool last_switch_state = switch_if_->is_enabled();
-  if (loopcount_ % 2 == 0) {
-    switch_if_->set_enabled(true);
-  } else {
-    switch_if_->set_enabled(false);
-  }
   while (! switch_if_->msgq_empty()) {
     if (SwitchInterface::EnableSwitchMessage *msg =
         switch_if_->msgq_first_safe(msg))
@@ -105,10 +99,10 @@ TabletopSwitchThread::loop()
     for (list<SwitchInterface *>::iterator it = tabletop_switch_ifs_.begin(); it != tabletop_switch_ifs_.end(); it++) {
       Message *msg;
       if (switch_if_->is_enabled()) {
-        logger->log_debug(name(), "Enabling %s", (*it)->id());
+//        logger->log_debug(name(), "Enabling %s", (*it)->id());
         msg = new SwitchInterface::EnableSwitchMessage();
       } else {
-        logger->log_debug(name(), "Disabling %s", (*it)->id());
+//        logger->log_debug(name(), "Disabling %s", (*it)->id());
         msg = new SwitchInterface::DisableSwitchMessage();
       }
       (*it)->msgq_enqueue(msg);

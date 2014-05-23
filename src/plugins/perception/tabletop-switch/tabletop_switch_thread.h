@@ -51,7 +51,6 @@ class TabletopSwitchThread
  private:
   fawkes::SwitchInterface *switch_if_;
   std::list<fawkes::SwitchInterface *> tabletop_switch_ifs_;
-  uint loopcount_;
 };
 
 #endif
