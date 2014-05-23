@@ -1,8 +1,8 @@
 #*****************************************************************************
-#          Makefile Build System for Fawkes: perception plugins
+#            Makefile Build System for Fawkes: Tabletop Switch Plugin
 #                            -------------------
-#   Created on Sun Jan 14 18:24:42 2007
-#   Copyright (C) 2006-2011 by Tim Niemueller, AllemaniACs RoboCup Team
+#   Created on Fri May 23 12:03:42 2014
+#   Copyright (C) 2014 by Till Hofmann
 #
 #*****************************************************************************
 #
@@ -13,19 +13,18 @@
 #
 #*****************************************************************************
 
-BASEDIR = ../../..
+
+BASEDIR = ../../../..
 
 include $(BASEDIR)/etc/buildsys/config.mk
-include $(BUILDSYSDIR)/fvconf.mk
 
-SUBDIRS = base fountain retriever tabletop-objects pcl-db \
-	tabletop-detection object-detection common tabletop-visualization \
-	object-tracking object-fitting tabletop-switch
+LIBS_tabletop_switch = fawkescore fawkesutils fawkesaspects fvutils \
+	       fawkestf fawkesinterface fawkesblackboard \
+	       SwitchInterface
+OBJS_tabletop_switch = tabletop_switch_plugin.o tabletop_switch_thread.o
 
-tabletop-detection: common
-object-detection: common
-object-tracking: common
-object-fitting: common
-tabletop-visualization: common
-include $(BUILDSYSDIR)/rules.mk
+OBJS_all    = $(OBJS_tabletop_switch)
 
+PLUGINS_all = $(PLUGINDIR)/tabletop-switch.$(SOEXT)
+
+include $(BUILDSYSDIR)/base.mk
