@@ -65,6 +65,10 @@ ObjectDetectionThread::~ObjectDetectionThread()
 void
 ObjectDetectionThread::init()
 {
+  // allow concurrent execution of prepare_finalize and loop
+  // this is necessary to interrupt syncpoint wait calls
+  set_prepfin_conc_loop(true);
+
   cfg_cluster_tolerance_     = config->get_float(CFG_PREFIX"cluster_tolerance");
   cfg_cluster_min_size_      = config->get_uint(CFG_PREFIX"cluster_min_size");
   cfg_cluster_max_size_      = config->get_uint(CFG_PREFIX"cluster_max_size");

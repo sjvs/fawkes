@@ -63,6 +63,10 @@ void
 ObjectFittingThread::init()
 {
 
+  // allow concurrent execution of prepare_finalize and loop
+  // this is necessary to interrupt syncpoint wait calls
+  set_prepfin_conc_loop(true);
+
   cfg_baselink_frame_id_ = "/base_link";
   try {
     cfg_baselink_frame_id_ = config->get_string(CFG_PREFIX"base_link_frame_id");

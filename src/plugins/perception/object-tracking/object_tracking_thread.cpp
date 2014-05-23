@@ -54,6 +54,10 @@ ObjectTrackingThread::~ObjectTrackingThread()
 void
 ObjectTrackingThread::init()
 {
+  // allow concurrent execution of prepare_finalize and loop
+  // this is necessary to interrupt syncpoint wait calls
+  set_prepfin_conc_loop(true);
+
   cfg_centroid_max_distance_ = config->get_float(CFG_PREFIX"centroid_max_distance");
   cfg_ifs_in_                = config->get_string(CFG_PREFIX"interfaces_in");
   cfg_ifs_out_               = config->get_string(CFG_PREFIX"interfaces_out");

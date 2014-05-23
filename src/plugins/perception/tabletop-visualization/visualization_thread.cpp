@@ -84,6 +84,11 @@ TabletopVisualizationThread::TabletopVisualizationThread()
 void
 TabletopVisualizationThread::init()
 {
+
+  // allow concurrent execution of prepare_finalize and loop
+  // this is necessary to interrupt syncpoint wait calls
+  set_prepfin_conc_loop(true);
+
   cfg_duration_ = 120;
   try {
     cfg_duration_ = config->get_uint(CFG_PREFIX_VIS"display_duration");
