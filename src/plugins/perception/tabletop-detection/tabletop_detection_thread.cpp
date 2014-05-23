@@ -130,9 +130,15 @@ TabletopDetectionThread::init()
     switch_if_->set_enabled(true);
     switch_if_->write();
 
+    hull_if_ = blackboard->open_for_writing<TabletopHullInterface>("tabletop-hull");
+    model_hull_if_ = blackboard->open_for_writing<TabletopHullInterface>("tabletop-model-hull");
+
+
   } catch (Exception &e) {
     blackboard->close(table_pos_if_);
     blackboard->close(switch_if_);
+    blackboard->close(hull_if_);
+    blackboard->close(model_hull_if_);
     throw;
   }
 
@@ -212,6 +218,8 @@ TabletopDetectionThread::finalize()
 
   blackboard->close(table_pos_if_);
   blackboard->close(switch_if_);
+  blackboard->close(hull_if_);
+  blackboard->close(model_hull_if_);
 
   finput_.reset();
   ftable_model_.reset();
@@ -953,6 +961,40 @@ TabletopDetectionThread::loop()
   condrem.filter(*cloud_objs_);
 
   TIMETRACK_INTER(ttc_polygon_filter_, ttc_table_to_output_);
+
+  hull_if_->set_num_points(cloud_hull_->size());
+  hull_if_->set_frame(cloud_hull_->header.frame_id.c_str());
+  for (uint i = 0; i < cloud_hull_->size(); i++) {
+    if (i >= hull_if_->maxlenof_x()) {
+      hull_if_->set_num_points(hull_if_->maxlenof_x());
+      logger->log_warn(name(), "cloud hull interface size is %u, but %u needed", hull_if_->maxlenof_x(), cloud_hull_->size());
+      break;
+    }
+    hull_if_->set_x(i, cloud_hull_->points[i].x);
+    hull_if_->set_y(i, cloud_hull_->points[i].y);
+    hull_if_->set_z(i, cloud_hull_->points[i].z);
+  }
+  hull_if_->write();
+
+  if (model_cloud_hull_) {
+    if (model_cloud_hull_->header.frame_id == "") {
+      model_cloud_hull_->header.frame_id = cloud_hull_->header.frame_id;
+    }
+    model_hull_if_->set_num_points(model_cloud_hull_->size());
+    model_hull_if_->set_frame(model_cloud_hull_->header.frame_id.c_str());
+    for (uint i = 0; i < model_cloud_hull_->size(); i++) {
+      if (i >= model_hull_if_->maxlenof_x()) {
+        model_hull_if_->set_num_points(model_hull_if_->maxlenof_x());
+        logger->log_warn(name(), "model cloud hull interface size is %u, but %u needed", model_hull_if_->maxlenof_x(), model_cloud_hull_->size());
+        break;
+      }
+      model_hull_if_->set_x(i, model_cloud_hull_->points[i].x);
+      model_hull_if_->set_y(i, model_cloud_hull_->points[i].y);
+      model_hull_if_->set_z(i, model_cloud_hull_->points[i].z);
+    }
+
+    model_hull_if_->write();
+  }
 
   std::vector<int> indices(cloud_proj_->points.size());
   for (uint i = 0; i < indices.size(); i++)

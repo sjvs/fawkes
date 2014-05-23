@@ -112,6 +112,8 @@ TabletopVisualizationThread::init()
 
   obj_pos_ifs_ = blackboard->open_multiple_for_reading<Position3DInterface>(cfg_object_name_pattern_.c_str());
   table_pos_if_ = blackboard->open_for_reading<Position3DInterface>("Tabletop");
+  hull_if_ = blackboard->open_for_reading<TabletopHullInterface>("tabletop-hull");
+  model_hull_if_ = blackboard->open_for_reading<TabletopHullInterface>("tabletop-model-hull");
 
   syncpoint_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_.c_str());
 
@@ -294,6 +296,16 @@ TabletopVisualizationThread::loop()
   m.markers.push_back(normal);
 
 
+  // Table surrounding polygon
+
+  model_hull_if_->read();
+  hull_if_->read();
+  if (model_hull_if_->num_points() > 0) {
+    m.markers.push_back(visualize_hull(model_hull_if_, idnum));
+  } else if (hull_if_->num_points() > 0) {
+    m.markers.push_back(visualize_hull(hull_if_, idnum));
+  }
+
   // delete old markers
   for (size_t i = idnum; i < last_id_num_; ++i) {
     visualization_msgs::Marker delop;
@@ -320,3 +332,29 @@ TabletopVisualizationThread::loop()
 #endif
 }
 
+visualization_msgs::Marker
+TabletopVisualizationThread::visualize_hull(TabletopHullInterface *hull_if, unsigned int &idnum)
+{
+  visualization_msgs::Marker hull;
+  hull.header.frame_id = hull_if->frame();
+  hull.header.stamp = ros::Time::now();
+  hull.ns = "tabletop";
+  hull.id = idnum++;
+  hull.type = visualization_msgs::Marker::LINE_STRIP;
+  hull.action = visualization_msgs::Marker::ADD;
+  hull.points.resize(hull_if->num_points() + 1);
+  for (size_t i = 0; i < hull_if->num_points(); ++i) {
+    hull.points[i].x = hull_if->x(i);
+    hull.points[i].y = hull_if->y(i);
+    hull.points[i].z = hull_if->z(i);
+  }
+  hull.points[hull_if->num_points()].x = hull_if->x(0);
+  hull.points[hull_if->num_points()].y = hull_if->y(0);
+  hull.points[hull_if->num_points()].z = hull_if->z(0);
+  hull.scale.x = 0.005;
+  hull.color.r = 0.4;
+  hull.color.g = hull.color.b = 0.f;
+  hull.color.a = 0.2;
+  hull.lifetime = ros::Duration(cfg_duration_, 0);
+  return(hull);
+}

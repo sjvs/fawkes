@@ -40,6 +40,7 @@
 #include <plugins/ros/aspect/ros.h>
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
+#include <interfaces/TabletopHullInterface.h>
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>
@@ -86,9 +87,14 @@ class TabletopVisualizationThread
     virtual void finalize();
 
  private:
+   visualization_msgs::Marker visualize_hull(fawkes::TabletopHullInterface* iface, uint &idnum);
+
+ private:
   fawkes::Mutex mutex_;
   std::list<fawkes::Position3DInterface *> obj_pos_ifs_;
   fawkes::Position3DInterface * table_pos_if_;
+  fawkes::TabletopHullInterface * hull_if_;
+  fawkes::TabletopHullInterface *model_hull_if_;
   ros::Publisher *vispub_;
 #ifdef USE_POSEPUB
   ros::Publisher *posepub_;
