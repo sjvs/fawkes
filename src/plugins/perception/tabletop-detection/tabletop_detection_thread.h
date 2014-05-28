@@ -39,6 +39,7 @@
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
 #include <interfaces/TabletopHullInterface.h>
+#include <interfaces/TabletopEdgesInterface.h>
 
 #include <syncpoint/syncpoint.h>
 
@@ -129,6 +130,7 @@ class TabletopDetectionThread
   fawkes::Position3DInterface *table_pos_if_;
   fawkes::TabletopHullInterface *hull_if_;
   fawkes::TabletopHullInterface *model_hull_if_;
+  fawkes::TabletopEdgesInterface *good_edges_if_;
 
   double table_inclination_;
   Eigen::Vector4f table_centroid;

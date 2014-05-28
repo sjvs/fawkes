@@ -132,6 +132,7 @@ TabletopDetectionThread::init()
 
     hull_if_ = blackboard->open_for_writing<TabletopHullInterface>("tabletop-hull");
     model_hull_if_ = blackboard->open_for_writing<TabletopHullInterface>("tabletop-model-hull");
+    good_edges_if_ = blackboard->open_for_writing<TabletopEdgesInterface>("tabletop-good-edges");
 
 
   } catch (Exception &e) {
@@ -139,6 +140,7 @@ TabletopDetectionThread::init()
     blackboard->close(switch_if_);
     blackboard->close(hull_if_);
     blackboard->close(model_hull_if_);
+    blackboard->close(good_edges_if_);
     throw;
   }
 
@@ -220,6 +222,7 @@ TabletopDetectionThread::finalize()
   blackboard->close(switch_if_);
   blackboard->close(hull_if_);
   blackboard->close(model_hull_if_);
+  blackboard->close(good_edges_if_);
 
   finput_.reset();
   ftable_model_.reset();
@@ -530,10 +533,8 @@ TabletopDetectionThread::loop()
 
   TIMETRACK_INTER(ttc_simplify_polygon_, ttc_find_edge_)
 
-#ifdef HAVE_VISUAL_DEBUGGING
-  TabletopVisualizationThreadBase::V_Vector4f good_hull_edges;
+  V_Vector4f good_hull_edges;
   good_hull_edges.resize(cloud_hull_->points.size() * 2);
-#endif
 
   try {
 
@@ -569,10 +570,11 @@ TabletopDetectionThread::loop()
 
     // point and good edge indexes of chosen candidate
     size_t pidx1, pidx2;
-#ifdef HAVE_VISUAL_DEBUGGING
+
+    // visualization
     size_t geidx1 = std::numeric_limits<size_t>::max();
     size_t geidx2 = std::numeric_limits<size_t>::max();
-#endif
+
     // lower frustrum potential candidate
     size_t lf_pidx1, lf_pidx2;
     pidx1 = pidx2 = lf_pidx1 = lf_pidx2 = std::numeric_limits<size_t>::max();
@@ -587,9 +589,10 @@ TabletopDetectionThread::loop()
     // otherwise we fallback to this line as it is a good rough guess
     // to prevent at least worst things during manipulation
     const size_t psize = cloud_hull_->points.size();
-#ifdef HAVE_VISUAL_DEBUGGING
+
+    // visualization
     size_t good_edge_points = 0;
-#endif
+
     for (size_t i = 0; i < psize; ++i) {
       //logger->log_debug(name(), "Checking %zu and %zu of %zu", i, (i+1) % psize, psize);
       PointType &p1p = cloud_hull_->points[i          ];
@@ -627,7 +630,6 @@ TabletopDetectionThread::loop()
           continue;
         }
 
-#ifdef HAVE_VISUAL_DEBUGGING
         // Remember as good edge for visualization
         for (unsigned int j = 0; j < 3; ++j)
           good_hull_edges[good_edge_points][j] = p1[j];
@@ -637,7 +639,6 @@ TabletopDetectionThread::loop()
           good_hull_edges[good_edge_points][j] = p2[j];
         good_hull_edges[good_edge_points][3] = 0.;
         ++good_edge_points;
-#endif
 
         if (pidx1 != std::numeric_limits<size_t>::max()) {
           // current best base-relative points
@@ -662,10 +663,10 @@ TabletopDetectionThread::loop()
         // Was not sorted out, therefore promote candidate to current best
         pidx1 = i;
         pidx2 = (i + 1) % psize;
-#ifdef HAVE_VISUAL_DEBUGGING
+
+        // visualization
         geidx1 = good_edge_points - 2;
         geidx2 = good_edge_points - 1;
-#endif
       }
     }
 
@@ -689,17 +690,15 @@ TabletopDetectionThread::loop()
         pidx1 = lf_pidx1;
         pidx2 = lf_pidx2;
 
-#ifdef HAVE_VISUAL_DEBUGGING
+        // visualization
         good_hull_edges[good_edge_points][0] = cloud_hull_->points[lf_pidx1].x;
         good_hull_edges[good_edge_points][1] = cloud_hull_->points[lf_pidx1].y;
         good_hull_edges[good_edge_points][2] = cloud_hull_->points[lf_pidx1].z;
         geidx1 = good_edge_points++;
-
         good_hull_edges[good_edge_points][0] = cloud_hull_->points[lf_pidx2].x;
         good_hull_edges[good_edge_points][1] = cloud_hull_->points[lf_pidx2].y;
         good_hull_edges[good_edge_points][2] = cloud_hull_->points[lf_pidx2].z;
         geidx2 = good_edge_points++;
-#endif
 
       } else {
 
@@ -718,30 +717,27 @@ TabletopDetectionThread::loop()
           pidx1 = lf_pidx1;
           pidx2 = lf_pidx2;
 
-#ifdef HAVE_VISUAL_DEBUGGING
+          // visualization
           good_hull_edges[good_edge_points][0] = cloud_hull_->points[lf_pidx1].x;
           good_hull_edges[good_edge_points][1] = cloud_hull_->points[lf_pidx1].y;
           good_hull_edges[good_edge_points][2] = cloud_hull_->points[lf_pidx1].z;
           geidx1 = good_edge_points++;
-
           good_hull_edges[good_edge_points][0] = cloud_hull_->points[lf_pidx2].x;
           good_hull_edges[good_edge_points][1] = cloud_hull_->points[lf_pidx2].y;
           good_hull_edges[good_edge_points][2] = cloud_hull_->points[lf_pidx2].z;
           geidx2 = good_edge_points++;
-#endif
         }
       }
     }
 
     //logger->log_info(name(), "Chose %zu -> %zu", pidx1, pidx2);
 
-#ifdef HAVE_VISUAL_DEBUGGING
+    // visualization
     if (good_edge_points > 0) {
       good_hull_edges[geidx1][3] = 1.0;
       good_hull_edges[geidx2][3] = 1.0;
     }
     good_hull_edges.resize(good_edge_points);
-#endif
 
     TIMETRACK_END(ttc_find_edge_);
 
@@ -995,6 +991,21 @@ TabletopDetectionThread::loop()
 
     model_hull_if_->write();
   }
+
+  good_edges_if_->set_num_points(good_hull_edges.size());
+  good_edges_if_->set_frame(cloud_hull_->header.frame_id.c_str());
+  for (uint i = 0; i < good_hull_edges.size(); i++) {
+    if (i >= good_edges_if_->maxlenof_x()) {
+      good_edges_if_->set_num_points(good_edges_if_->maxlenof_x());
+      logger->log_warn(name(), "cloud hull interface size is %u, but %u needed", good_edges_if_->maxlenof_x(), good_hull_edges.size());
+      break;
+    }
+    good_edges_if_->set_x(i, good_hull_edges[i][0]);
+    good_edges_if_->set_y(i, good_hull_edges[i][1]);
+    good_edges_if_->set_z(i, good_hull_edges[i][2]);
+    good_edges_if_->set_goodness(i, good_hull_edges[i][3]);
+  }
+  good_edges_if_->write();
 
   std::vector<int> indices(cloud_proj_->points.size());
   for (uint i = 0; i < indices.size(); i++)

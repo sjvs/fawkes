@@ -51,6 +51,8 @@ typedef Cloud::ConstPtr CloudConstPtr;
 typedef ColorCloud::Ptr ColorCloudPtr;
 typedef ColorCloud::ConstPtr ColorCloudConstPtr;
 
+typedef std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > V_Vector4f;
+
 void set_pos_interface(fawkes::Position3DInterface *iface, bool is_visible,
   tf::Stamped<tf::Pose> baserel_pose =
       tf::Stamped<tf::Pose>(tf::Pose(), fawkes::Time(0, 0), ""));

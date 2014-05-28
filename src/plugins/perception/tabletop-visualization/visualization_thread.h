@@ -41,6 +41,7 @@
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
 #include <interfaces/TabletopHullInterface.h>
+#include <interfaces/TabletopEdgesInterface.h>
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>
@@ -73,13 +74,6 @@ class TabletopVisualizationThread
 {
  public:
 
-    /** Aligned vector of vectors/points. */
-    typedef std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > V_Vector4f;
-    /** aligned map of vectors. */
-    typedef std::map<unsigned int, Eigen::Vector4f, std::less<unsigned int>,
-        Eigen::aligned_allocator<std::pair<const unsigned int, Eigen::Vector4f>>>
-        M_Vector4f;
-
     TabletopVisualizationThread();
 
     virtual void init();
@@ -88,6 +82,10 @@ class TabletopVisualizationThread
 
  private:
    visualization_msgs::Marker visualize_hull(fawkes::TabletopHullInterface* iface, uint &idnum);
+   visualization_msgs::Marker visualize_cvxhull_vertices(fawkes::TabletopHullInterface* iface, uint &idnum);
+   visualization_msgs::Marker visualize_plane(fawkes::TabletopHullInterface* iface, uint &idnum);
+//   visualization_msgs::Marker visualize_frustrum(uint &idnum);
+//   visualization_msgs::Marker visualize_frustrum_triangles(uint &idnum);
 
  private:
   fawkes::Mutex mutex_;
@@ -95,6 +93,7 @@ class TabletopVisualizationThread
   fawkes::Position3DInterface * table_pos_if_;
   fawkes::TabletopHullInterface * hull_if_;
   fawkes::TabletopHullInterface *model_hull_if_;
+  fawkes::TabletopEdgesInterface *good_hull_edges_if_;
   ros::Publisher *vispub_;
 #ifdef USE_POSEPUB
   ros::Publisher *posepub_;
@@ -110,6 +109,12 @@ class TabletopVisualizationThread
   unsigned int cfg_duration_;
   std::string cfg_object_name_pattern_;
   std::string cfg_syncpoint_;
+  bool cfg_show_cvxhull_line_highlighting_;
+  bool cfg_show_cvxhull_vertices_;
+  bool cfg_show_cvxhull_vertex_ids_;
+  bool cfg_show_frustrum_;
+  float cfg_horizontal_va_;
+  float cfg_vertical_va_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -6,7 +6,26 @@ doc-url: !url http://trac.fawkesrobotics.org/wiki/Plugins/tabletop-objects
 perception/visualization:
   # Input interface names (regexp)
   object_name_pattern: "Tracked Object *"
+
   # SyncPoint Identifier
   # This should be the name of the SyncPoint which is released
   # by the last thread which is visualized
   syncpoint: "/perception/object-tracking"
+
+  # Horizontal viewing angle of the camera, used for frustrum, value is for Kinect; deg
+  horizontal_viewing_angle: 57.0
+
+  # Vertical viewing angle of the camera, used for frustrum, value is for Kinect; deg
+  vertical_viewing_angle: 43.0
+
+  # Show the frustrum according to configured horizontal and vertical viewing angle.
+  show_frustrum: true
+
+  # Show text with convex hull vertex IDs?
+  show_convex_hull_vertices: true
+
+  # Show highlighted hull lines to understand edge selection? Otherwise plain hull is shown.
+  show_convex_hull_line_highlighting: true
+
+  # Show text with convex hull vertex IDs?
+  show_convex_hull_vertex_ids: true

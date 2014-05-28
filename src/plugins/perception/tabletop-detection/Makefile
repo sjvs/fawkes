@@ -39,7 +39,8 @@ endif
 LIBS_tabletop_detection = fawkescore fawkesutils fawkesaspects fvutils \
 			fawkestf fawkesinterface fawkesblackboard fawkespcl_utils \
 			Position3DInterface SwitchInterface \
-			fawkesperception_common fawkessyncpoint TabletopHullInterface
+			fawkesperception_common fawkessyncpoint TabletopHullInterface \
+			TabletopEdgesInterface
 OBJS_tabletop_detection = tabletop_detection_plugin.o tabletop_detection_thread.o
 
 OBJS_all    = $(OBJS_tabletop_detection)
