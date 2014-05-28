@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE interface SYSTEM "interface.dtd">
+<interface name="TabletopEdgesInterface" author="Till Hofmann" year="2014">
+  <data>
+    <comment>
+      Storage for the edges of a table. Used for visualization.
+    </comment>
+    <field type="string" length="32" name="frame">
+      Reference coordinate frame for the data.
+    </field>
+    <field type="uint32" name="num_points">
+        Number of edges
+    </field>
+    <field type="double" length="20" name="x">
+      The x coordinate of an edge point
+    </field>
+    <field type="double" length="20" name="y">
+      The y coordinate of an edge point
+    </field>
+    <field type="double" length="20" name="z">
+      The z coordinate of an edge point
+    </field>
+    <field type="double" length="20" name="goodness">
+      The z coordinate of an edge point
+    </field>
+  </data>
+</interface>
