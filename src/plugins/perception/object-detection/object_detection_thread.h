@@ -134,6 +134,7 @@ class ObjectDetectionThread
   std::vector<pcl::PointIndices> extract_object_clusters(fawkes::perception::CloudConstPtr input);
   void delete_high_centroids(Eigen::Vector4f table_centroid,
     CentroidMap &centroids);
+  void delete_centroids_close_to_base(CentroidMap &centroids);
   unsigned int cluster_objects(fawkes::perception::CloudConstPtr input,
     fawkes::perception::ColorCloudPtr tmp_clusters,
     std::vector<fawkes::perception::ColorCloudPtr> &tmp_obj_clusters);
@@ -167,6 +168,7 @@ class ObjectDetectionThread
   std::string cfg_syncpoint_in_;
   std::string cfg_syncpoint_out_;
   bool cfg_verbose_output_;
+  float cfg_centroid_min_distance_to_base_;
 
 #ifdef USE_TIMETRACKER
   fawkes::TimeTracker  *tt_;

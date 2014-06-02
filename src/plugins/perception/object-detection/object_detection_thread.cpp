@@ -69,14 +69,15 @@ ObjectDetectionThread::init()
   // this is necessary to interrupt syncpoint wait calls
   set_prepfin_conc_loop(true);
 
-  cfg_cluster_tolerance_     = config->get_float(CFG_PREFIX"cluster_tolerance");
-  cfg_cluster_min_size_      = config->get_uint(CFG_PREFIX"cluster_min_size");
-  cfg_cluster_max_size_      = config->get_uint(CFG_PREFIX"cluster_max_size");
-  cfg_result_frame_          = config->get_string(CFG_PREFIX"result_frame");
-  cfg_input_pointcloud_      = config->get_string(CFG_PREFIX"input_pointcloud");
-  cfg_centroid_max_height_   = config->get_float(CFG_PREFIX"centroid_max_height");
-  cfg_syncpoint_in_          = config->get_string(CFG_PREFIX"syncpoint_in");
-  cfg_syncpoint_out_         = config->get_string(CFG_PREFIX"syncpoint_out");
+  cfg_cluster_tolerance_              = config->get_float(CFG_PREFIX"cluster_tolerance");
+  cfg_cluster_min_size_               = config->get_uint(CFG_PREFIX"cluster_min_size");
+  cfg_cluster_max_size_               = config->get_uint(CFG_PREFIX"cluster_max_size");
+  cfg_result_frame_                   = config->get_string(CFG_PREFIX"result_frame");
+  cfg_input_pointcloud_               = config->get_string(CFG_PREFIX"input_pointcloud");
+  cfg_centroid_max_height_            = config->get_float(CFG_PREFIX"centroid_max_height");
+  cfg_centroid_min_distance_to_base_  = config->get_float(CFG_PREFIX"centroid_min_distance_to_base");
+  cfg_syncpoint_in_                   = config->get_string(CFG_PREFIX"syncpoint_in");
+  cfg_syncpoint_out_                  = config->get_string(CFG_PREFIX"syncpoint_out");
 
   cfg_verbose_output_ = true;
   try {
@@ -401,6 +402,7 @@ pcl_utils::transform_pointcloud("/base_link", *single_cluster,
     double *translation(table_pos_if_->translation());
     Eigen::Vector4f table_centroid(translation[0], translation[1], translation[2], 0.f);
     delete_high_centroids(table_centroid, tmp_centroids);
+    delete_centroids_close_to_base(tmp_centroids);
 
 //    if (object_count > 0)
 //      first_run_ = false;
@@ -494,5 +496,25 @@ ObjectDetectionThread::delete_high_centroids(Eigen::Vector4f table_centroid,
     }
   } catch (tf::TransformException &e) {
     // keep all centroids if transformation of the table fails
+  }
+}
+
+void
+ObjectDetectionThread::delete_centroids_close_to_base (CentroidMap &centroids) {
+  for (CentroidMap::iterator it = centroids.begin(); it != centroids.end();) {
+    try {
+      tf::Stamped<tf::Point> sp_baserel_centroid(
+          tf::Point(it->second[0], it->second[1], it->second[2]),
+          fawkes::Time(0, 0), "/base_link");
+      float d = sp_baserel_centroid.x();
+      if (d < cfg_centroid_min_distance_to_base_) {
+        logger->log_debug(name(), "remove centroid %u, too close to base (d=%f)", it->first, d);
+        centroids.erase(it++);
+      } else
+        it++;
+    } catch (tf::TransformException &e) {
+      // simply keep the centroid if we can't transform it
+      it++;
+    }
   }
 }
