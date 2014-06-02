@@ -81,6 +81,10 @@ ObjectTrackingThread::init()
     throw;
   }
 
+  if (pos_ifs_in_.size() == 0) {
+    throw Exception("Tried to open Interfaces %u, but none found.", cfg_ifs_in_.c_str());
+  }
+
   try {
     double rotation[4] = {0., 0., 0., 1.};
 

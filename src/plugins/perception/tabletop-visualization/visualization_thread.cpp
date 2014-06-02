@@ -132,6 +132,9 @@ TabletopVisualizationThread::init()
   last_id_num_ = 0;
 
   obj_pos_ifs_ = blackboard->open_multiple_for_reading<Position3DInterface>(cfg_object_name_pattern_.c_str());
+  if (obj_pos_ifs_.size() == 0) {
+    throw Exception("Tried to open interfaces %u, but none found.", cfg_object_name_pattern_.c_str());
+  }
   table_pos_if_ = blackboard->open_for_reading<Position3DInterface>("Tabletop");
   hull_if_ = blackboard->open_for_reading<TabletopHullInterface>("tabletop-hull");
   model_hull_if_ = blackboard->open_for_reading<TabletopHullInterface>("tabletop-model-hull");
