@@ -151,19 +151,7 @@ TabletopVisualizationThread::init()
 void
 TabletopVisualizationThread::finalize()
 {
-  visualization_msgs::MarkerArray m;
-  // delete old markers
-  for (size_t i = 0; i < last_id_num_; ++i) {
-    visualization_msgs::Marker delop;
-    delop.header.frame_id = frame_id_;
-    delop.header.stamp = ros::Time::now();
-    delop.ns = "tabletop";
-    delop.id = i;
-    delop.action = visualization_msgs::Marker::DELETE;
-    m.markers.push_back(delop);
-  }
-  vispub_->publish(m);
-
+  delete_all_markers();
   vispub_->shutdown();
   delete vispub_;
 //#ifdef USE_POSEPUB
@@ -641,4 +629,22 @@ TabletopVisualizationThread::visualize_plane(
   plane.color.a = 1.0;
   plane.lifetime = ros::Duration(cfg_duration_, 0);
   return plane;
+}
+
+void
+TabletopVisualizationThread::delete_all_markers()
+{
+  visualization_msgs::MarkerArray m;
+  // delete old markers
+  for (size_t i = 0; i < last_id_num_; ++i) {
+    visualization_msgs::Marker delop;
+    delop.header.frame_id = frame_id_;
+    delop.header.stamp = ros::Time::now();
+    delop.ns = "tabletop";
+    delop.id = i;
+    delop.action = visualization_msgs::Marker::DELETE;
+    m.markers.push_back(delop);
+  }
+  vispub_->publish(m);
+  last_id_num_ = 0;
 }

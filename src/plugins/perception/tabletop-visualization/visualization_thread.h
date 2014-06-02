@@ -87,6 +87,8 @@ class TabletopVisualizationThread
 //   visualization_msgs::Marker visualize_frustrum(uint &idnum);
 //   visualization_msgs::Marker visualize_frustrum_triangles(uint &idnum);
 
+  void delete_all_markers();
+
  private:
   fawkes::Mutex mutex_;
   std::list<fawkes::Position3DInterface *> obj_pos_ifs_;
