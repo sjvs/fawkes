@@ -192,6 +192,7 @@ TabletopVisualizationThread::loop()
   }
 
   if (! switch_if_->is_enabled()) {
+    delete_all_markers();
     TimeWait::wait(250000);
     return;
   }
