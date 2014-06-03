@@ -285,6 +285,9 @@ TabletopVisualizationThread::loop()
   Eigen::Vector3f table_normal3 = quaternion_to_normal(quat);
 
   Eigen::Vector4f table_normal(table_normal3[0], table_normal3[1], table_normal3[2], 0.f);
+  if (table_normal[2] < 0.f) {
+    table_normal *= -1;
+  }
 //  logger->log_debug(name(), "table_normal: (%f %f %f)", table_normal3[0], table_normal3[1], table_normal3[2]);
   Eigen::Vector4f normal_end = (table_centroid + (table_normal * 0.15));
 //  logger->log_debug(name(), "normal_end: (%f %f %f)", normal_end[0], normal_end[1], normal_end[2]);
