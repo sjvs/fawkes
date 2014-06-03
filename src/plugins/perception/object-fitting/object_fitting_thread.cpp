@@ -22,7 +22,6 @@
 #include "object_fitting_thread.h"
 
 #include <pcl_utils/utils.h>
-#include <utils/time/wait.h>
 
 #include <interfaces/SwitchInterface.h>
 
@@ -215,7 +214,6 @@ ObjectFittingThread::loop()
   }
 
   if (! switch_if_->is_enabled()) {
-    TimeWait::wait(250000);
     return;
   }
 

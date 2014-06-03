@@ -25,7 +25,6 @@
 
 #include <core/threading/mutex_locker.h>
 #include <utils/math/angle.h>
-#include <utils/time/wait.h>
 
 #include <libs/syncpoint/exceptions.h>
 
@@ -193,7 +192,6 @@ TabletopVisualizationThread::loop()
 
   if (! switch_if_->is_enabled()) {
     delete_all_markers();
-    TimeWait::wait(250000);
     return;
   }
 

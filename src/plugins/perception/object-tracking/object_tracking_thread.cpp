@@ -24,7 +24,6 @@
 #include <tf/types.h>
 
 #include <utils/hungarian_method/hungarian.h>
-#include <utils/time/wait.h>
 #include <pcl/registration/distances.h>
 
 #include <libs/syncpoint/exceptions.h>
@@ -158,7 +157,6 @@ ObjectTrackingThread::loop()
   }
 
   if (! switch_if_->is_enabled()) {
-    TimeWait::wait(250000);
     return;
   }
 

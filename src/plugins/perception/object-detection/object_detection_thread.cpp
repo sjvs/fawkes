@@ -29,7 +29,6 @@
 
 #include <libs/syncpoint/exceptions.h>
 
-#include <utils/time/wait.h>
 #ifdef USE_TIMETRACKER
 #  include <utils/time/tracker.h>
 #endif
@@ -229,7 +228,6 @@ ObjectDetectionThread::loop()
   }
 
   if (! switch_if_->is_enabled()) {
-    TimeWait::wait(250000);
     TIMETRACK_ABORT(ttc_full_loop_);
     return;
   }

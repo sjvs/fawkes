@@ -29,7 +29,6 @@
 #include <pcl_utils/utils.h>
 #include <pcl_utils/comparisons.h>
 #include <utils/time/tracker_macros.h>
-#include <utils/time/wait.h>
 #include <utils/math/angle.h>
 
 #include <pcl/point_cloud.h>
@@ -259,7 +258,6 @@ TabletopDetectionThread::loop()
   }
 
   if (! switch_if_->is_enabled()) {
-    TimeWait::wait(250000);
     TIMETRACK_ABORT(ttc_full_loop_);
     return;
   }
@@ -273,7 +271,6 @@ TabletopDetectionThread::loop()
     pcl_utils::get_time(input_, pcl_time);
   }
   if (*last_pcl_time_ == pcl_time) {
-    TimeWait::wait(20000);
     TIMETRACK_ABORT(ttc_full_loop_);
     return;
   }
@@ -306,7 +303,6 @@ TabletopDetectionThread::loop()
     // and not synchronized with main loop, but point cloud acquisition thread is
     // synchronized, we might start before any data has been read
     //logger->log_warn(name(), "Empty voxelized point cloud, omitting loop");
-    TimeWait::wait(50000);
     return;
   }
 
@@ -333,7 +329,6 @@ TabletopDetectionThread::loop()
       set_position(table_pos_if_, false);
       TIMETRACK_ABORT(ttc_plane_);
       TIMETRACK_ABORT(ttc_full_loop_);
-      TimeWait::wait(50000);
       return;
     }
 
@@ -348,7 +343,6 @@ TabletopDetectionThread::loop()
       set_position(table_pos_if_, false);
       TIMETRACK_ABORT(ttc_plane_);
       TIMETRACK_ABORT(ttc_full_loop_);
-      TimeWait::wait(50000);
       return;
     }
 
