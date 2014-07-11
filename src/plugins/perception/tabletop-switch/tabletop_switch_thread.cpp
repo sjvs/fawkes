@@ -28,6 +28,8 @@
 using namespace fawkes;
 using namespace std;
 
+#define CFG_PREFIX "/perception/tabletop-objects/"
+
 /** @class TabletopSwitchThread "tabletop_switch_thread.h"
  * Thread to switch on/off tabletop plugins
  * @author Till Hofmann
@@ -43,6 +45,10 @@ TabletopSwitchThread::TabletopSwitchThread()
 void
 TabletopSwitchThread::init()
 {
+  cfg_initial_state_ = true;
+  try {
+    cfg_initial_state_ = config->get_bool(CFG_PREFIX"initial_state");
+  } catch (Exception &e) { } // ignore, use default
   try {
     switch_if_ = blackboard->open_for_writing<SwitchInterface>("tabletop-objects");
     tabletop_switch_ifs_ = blackboard->open_multiple_for_reading<SwitchInterface>("object*");
@@ -74,6 +80,14 @@ TabletopSwitchThread::finalize()
   }
 }
 
+
+void
+TabletopSwitchThread::once()
+{
+  logger->log_debug(name(), "Initializing all plugins to %d", cfg_initial_state_);
+  msg_all_interfaces(cfg_initial_state_);
+}
+
 void
 TabletopSwitchThread::loop()
 {
@@ -96,16 +110,20 @@ TabletopSwitchThread::loop()
   }
 
   if (last_switch_state != switch_if_->is_enabled()) {
-    for (list<SwitchInterface *>::iterator it = tabletop_switch_ifs_.begin(); it != tabletop_switch_ifs_.end(); it++) {
-      Message *msg;
-      if (switch_if_->is_enabled()) {
-//        logger->log_debug(name(), "Enabling %s", (*it)->id());
-        msg = new SwitchInterface::EnableSwitchMessage();
-      } else {
-//        logger->log_debug(name(), "Disabling %s", (*it)->id());
-        msg = new SwitchInterface::DisableSwitchMessage();
-      }
-      (*it)->msgq_enqueue(msg);
+    msg_all_interfaces(switch_if_->is_enabled());
+  }
+}
+
+void
+TabletopSwitchThread::msg_all_interfaces(const bool new_state)
+{
+  for (list<SwitchInterface *>::iterator it = tabletop_switch_ifs_.begin(); it != tabletop_switch_ifs_.end(); it++) {
+    Message *msg;
+    if (new_state) {
+      msg = new SwitchInterface::EnableSwitchMessage();
+    } else {
+      msg = new SwitchInterface::DisableSwitchMessage();
     }
+    (*it)->msgq_enqueue(msg);
   }
 }

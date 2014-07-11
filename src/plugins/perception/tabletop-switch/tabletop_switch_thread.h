@@ -27,6 +27,7 @@
 #include <aspect/blackboard.h>
 #include <aspect/blocked_timing.h>
 #include <aspect/logging.h>
+#include <aspect/configurable.h>
 #include <interfaces/SwitchInterface.h>
 
 #include <list>
@@ -40,17 +41,25 @@ class TabletopSwitchThread
   public fawkes::ClockAspect,
   public fawkes::BlackBoardAspect,
   public fawkes::LoggingAspect,
+  public fawkes::ConfigurableAspect,
   public fawkes::BlockedTimingAspect
 {
  public:
   TabletopSwitchThread();
 
   virtual void init();
+  virtual void once();
   virtual void loop();
   virtual void finalize();
+
+ private:
+  void msg_all_interfaces(const bool new_state);
+
  private:
   fawkes::SwitchInterface *switch_if_;
   std::list<fawkes::SwitchInterface *> tabletop_switch_ifs_;
+
+  bool cfg_initial_state_;
 };
 
 #endif
