@@ -206,6 +206,10 @@ ObjectFittingThread::loop()
     } else if (SwitchInterface::DisableSwitchMessage *msg =
                switch_if_->msgq_first_safe(msg))
     {
+      for (vector<Position3DInterface *>::iterator it = pos_ifs_.begin(); it != pos_ifs_.end(); it++) {
+        (*it)->set_visibility_history(0);
+        (*it)->write();
+      }
       switch_if_->set_enabled(false);
       switch_if_->write();
     }

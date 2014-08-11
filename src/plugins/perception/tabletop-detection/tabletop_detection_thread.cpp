@@ -250,6 +250,8 @@ TabletopDetectionThread::loop()
     } else if (SwitchInterface::DisableSwitchMessage *msg =
                switch_if_->msgq_first_safe(msg))
     {
+      table_pos_if_->set_visibility_history(0);
+      table_pos_if_->write();
       switch_if_->set_enabled(false);
       switch_if_->write();
     }
