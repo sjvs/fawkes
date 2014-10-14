@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE interface SYSTEM "interface.dtd">
+<interface name="ObjectTracking" author="Till Hofmann" year="2014">
+  <data>
+    <comment>
+      Information about tracking. Provide messages to control
+      the behavior of the tracker.
+    </comment>
+    <field type="uint32" name="num_names">
+      Number of names that can currently be used.
+    </field>
+  </data>
+  <message name="SuggestId">
+    <comment>Suggest a name to object-tracking which should be
+      used for the next new object.</comment>
+    <field type="uint32" name="obj_id">
+      The id to suggest.
+    </field>
+  </message>
+</interface>
