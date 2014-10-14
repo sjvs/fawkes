@@ -70,6 +70,8 @@ ObjectTrackingThread::init()
     switch_if_ = blackboard->open_for_writing<SwitchInterface>("object-tracking");
     switch_if_->set_enabled(true);
     switch_if_->write();
+
+    track_if_ = blackboard->open_for_writing<ObjectTrackingInterface>("object-tracking");
   } catch (Exception &e) {
     // close interface and rethrow
     for (list<Position3DInterface *>::iterator it = pos_ifs_in_.begin();
@@ -87,10 +89,9 @@ ObjectTrackingThread::init()
   try {
     double rotation[4] = {0., 0., 0., 1.};
 
-    pos_ifs_out_.resize(pos_ifs_in_.size());
-    for (uint i = 0; i < pos_ifs_in_.size(); i++) {
+    for (uint i = 1; i <= pos_ifs_in_.size(); i++) {
       char *tmp;
-      if (asprintf(&tmp, "Tracked Object %u", i + 1) != -1) {
+      if (asprintf(&tmp, "Tracked Object %u", i) != -1) {
         // Copy to get memory freed on exception
         std::string id = tmp;
         free(tmp);
@@ -103,14 +104,18 @@ ObjectTrackingThread::init()
         free_ids_.push_back(i);
       }
     }
+
   } catch (Exception &e) {
     // close interface and rethrow
-    for (vector<Position3DInterface *>::iterator it = pos_ifs_out_.begin();
+    for (map<uint, Position3DInterface *>::iterator it = pos_ifs_out_.begin();
         it != pos_ifs_out_.end(); it++) {
-      blackboard->close(*it);
+      blackboard->close(it->second);
     }
     throw;
   }
+
+  track_if_->set_num_names(free_ids_.size());
+  track_if_->write();
 
   centroids_.clear();
   old_centroids_.clear();
@@ -126,8 +131,8 @@ ObjectTrackingThread::finalize()
   for(list<Position3DInterface *>::iterator it = pos_ifs_in_.begin(); it != pos_ifs_in_.end(); it++) {
     blackboard->close(*it);
   }
-  for(vector<Position3DInterface *>::iterator it = pos_ifs_out_.begin(); it != pos_ifs_out_.end(); it++) {
-    blackboard->close(*it);
+  for(map<uint, Position3DInterface *>::iterator it = pos_ifs_out_.begin(); it != pos_ifs_out_.end(); it++) {
+    blackboard->close(it->second);
   }
   blackboard->close(switch_if_);
 
@@ -149,16 +154,53 @@ ObjectTrackingThread::loop()
     } else if (SwitchInterface::DisableSwitchMessage *msg =
                switch_if_->msgq_first_safe(msg))
     {
-      for (vector<Position3DInterface *>::iterator it = pos_ifs_out_.begin();
+      for (map<uint, Position3DInterface *>::iterator it = pos_ifs_out_.begin();
           it != pos_ifs_out_.end(); it++) {
-        (*it)->set_visibility_history(0);
-        (*it)->write();
+        it->second->set_visibility_history(0);
+        it->second->write();
       }
       switch_if_->set_enabled(false);
       switch_if_->write();
     }
 
     switch_if_->msgq_pop();
+  }
+
+  while (! track_if_->msgq_empty()) {
+    if (ObjectTrackingInterface::SuggestIdMessage *msg =
+        track_if_->msgq_first_safe(msg))
+    {
+      if (pos_ifs_out_.count(msg->obj_id())) {
+        // interface exists already
+        // delete the centroid from the currently visible centroids
+        centroids_.erase(msg->obj_id());
+        free_ids_.remove(msg->obj_id());
+        prio_free_ids_.push_back(msg->obj_id());
+      } else {
+        char * tmp;
+        if (asprintf(&tmp, "Tracked Object %u", msg->obj_id())) {
+          std::string id = tmp;
+          free(tmp);
+          // interface does not exist, create it
+          logger->log_warn(name(), "ID %u was suggested, but interface does not exist. "
+              "Creating interface %s. "
+              "Note that other components may not be able to use the interface"
+              " (e.g. visualization won't show the object).", msg->obj_id(), id.c_str());
+          try {
+            Position3DInterface *iface = blackboard->open_for_writing<Position3DInterface>(id.c_str());
+            iface->set_visibility_history(0);
+            iface->write();
+            pos_ifs_out_[msg->obj_id()] = iface;
+            prio_free_ids_.push_back(msg->obj_id());
+          } catch (Exception &e) {
+            logger->log_error("Failed to create interface %s. Ignoring SuggestIdMessage for ID %u", id.c_str(), msg->obj_id());
+          }
+        } else {
+          logger->log_error(name(), "Failed to create object name, ignoring SuggestIdMessage for ID %u", msg->id());
+        }
+      }
+    }
+    track_if_->msgq_pop();
   }
 
   if (! switch_if_->is_enabled()) {
@@ -173,7 +215,8 @@ ObjectTrackingThread::loop()
   }
 
   // make sure we didn't 'lose' any IDs
-  assert(old_centroids_.size() + free_ids_.size() + centroids_.size() == pos_ifs_in_.size());
+  if (old_centroids_.size() + free_ids_.size() + centroids_.size() + prio_free_ids_.size() < pos_ifs_in_.size())
+    logger->log_error(name(), "There are more input than output interfaces, cannot track all objects.");
 
   // read the frame id from the first centroid
   // this is later used when writing the new positions to the blackboard
@@ -226,9 +269,9 @@ ObjectTrackingThread::loop()
   delete_near_centroids(centroids_, old_centroids_, cfg_centroid_min_distance_);
 
   // set all pos_ifs not in centroids_ to 'not visible'
-  for (unsigned int i = 0; i < pos_ifs_out_.size(); i++) {
-    if (!centroids_.count(i)) {
-      set_position(pos_ifs_out_[i], false);
+  for (map<uint, Position3DInterface *>::iterator it = pos_ifs_out_.begin(); it != pos_ifs_out_.end(); it++) {
+    if (!centroids_.count(it->first)) {
+      set_position(it->second, false);
     }
   }
 
@@ -356,6 +399,12 @@ ObjectTrackingThread::track_objects(
 }
 
 int ObjectTrackingThread::next_id() {
+  if (!prio_free_ids_.empty()) {
+    int id = prio_free_ids_.front();
+    prio_free_ids_.pop_front();
+    logger->log_debug(name(), "Assigning new object to suggested ID %u", id);
+    return id;
+  }
   if (free_ids_.empty()) {
     logger->log_debug(name(), "free_ids is empty");
     return -1;

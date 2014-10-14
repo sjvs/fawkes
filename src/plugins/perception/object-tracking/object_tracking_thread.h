@@ -32,6 +32,7 @@
 
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
+#include <interfaces/ObjectTrackingInterface.h>
 
 #include <vector>
 #include <map>
@@ -122,11 +123,14 @@ class ObjectTrackingThread
 
  private:
   std::list<fawkes::Position3DInterface *> pos_ifs_in_;
-  std::vector<fawkes::Position3DInterface *> pos_ifs_out_;
+  std::map<uint, fawkes::Position3DInterface *> pos_ifs_out_;
   fawkes::SwitchInterface *switch_if_;
+  fawkes::ObjectTrackingInterface *track_if_;
 
   bool first_run_;
   std::list<unsigned int> free_ids_;
+  /** List of free ids which should be used first */
+  std::list<unsigned int> prio_free_ids_;
   CentroidMap centroids_;
   OldCentroidVector old_centroids_;
   std::string frame_id_;
