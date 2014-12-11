@@ -72,10 +72,14 @@ LIBS_ros_move_base = fawkescore fawkesutils fawkesaspects fawkesblackboard \
 	      fawkesinterface fawkestf fawkesrosaspect NavigatorInterface
 OBJS_ros_move_base = move_base_plugin.o move_base_thread.o
 
+LIBS_ros_agent_info = fawkescore fawkesutils fawkesaspects fawkesblackboard \
+	      fawkesinterface fawkesrosaspect AgentInterface
+OBJS_ros_agent_info = agent_info_plugin.o agent_info_thread.o
+
 OBJS_all = $(OBJS_ros) $(OBJS_ros_talkerpub) $(OBJS_ros_webview) $(OBJS_ros_tf) \
 	   $(OBJS_ros_pcl) $(OBJS_ros_images) $(OBJS_ros_laserscan) $(OBJS_ros_odometry) \
 	   $(OBJS_ros_cmdvel) $(OBJS_ros_navigator) $(OBJS_ros_joint) \
-	   $(OBJS_ros_robot_description) $(OBJS_ros_move_base)
+	   $(OBJS_ros_robot_description) $(OBJS_ros_move_base) $(OBJS_ros_agent_info)
 
 ifeq ($(HAVE_ROS),1)
   PRESUBDIRS += aspect
@@ -209,6 +213,20 @@ ifeq ($(HAVE_ROS),1)
 
   PLUGINS_all += $(PLUGINDIR)/ros-robot-description.so
 
+  ifeq ($(call ros-have-pkg,continual_planning_executive),1)
+    ifeq ($(HAVE_CPP11),1)
+			CFLAGS_agent_info_thread += \
+				 $(call ros-pkg-cflags,continual_planning_executive) $(CFLAGS_CPP11)
+      CFLAGS_agent_info_plugin = $(CFLAGS_agent_info_thread)
+      LDFLAGS_agent_info = $(call ros-pkg-lflags,continual_planning_executive)
+      PLUGINS_all += $(PLUGINDIR)/ros-agent-info.so
+    else
+      WARN_TARGETS += warning_cpp11
+    endif
+  else
+    WARN_TARGETS += warning_continual_planning_executive
+  endif
+
 else
   WARN_TARGETS += warning_ros
 endif
@@ -247,6 +265,10 @@ warning_actionlib:
 	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting ROS navigator and move_base plugins$(TNORMAL) (ROS package actionlib not found)"
 warning_sensor_msgs:
 	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting ROS JointState Plugin$(TNORMAL) (ROS package sensor_msgs not found)"
+warning_cpp11:
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting Agent Info Plugin$(TNORMAL) (C++11 not supported)"
+warning_continual_planning_executive:
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting Agent Info Plugin$(TNORMAL) (ROS package continual_planning_executive not found)"
 endif
 
 include $(BUILDSYSDIR)/base.mk
