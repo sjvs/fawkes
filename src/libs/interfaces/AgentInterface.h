@@ -46,6 +46,7 @@ class AgentInterface : public Interface
     int64_t timestamp_usec; /**< Interface Unix timestamp, micro-seconds */
     char history[20000]; /**< All actions performed in the past. */
     char plan[20000]; /**< All planned actions. */
+    char message[256]; /**< Info message. */
   } AgentInterface_data_t;
 #pragma pack(pop)
 
@@ -66,6 +67,9 @@ class AgentInterface : public Interface
   char * plan() const;
   void set_plan(const char * new_plan);
   size_t maxlenof_plan() const;
+  char * message() const;
+  void set_message(const char * new_message);
+  size_t maxlenof_message() const;
   virtual Message * create_message(const char *type) const;
 
   virtual void copy_values(const Interface *other);

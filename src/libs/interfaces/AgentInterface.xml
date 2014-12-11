@@ -5,5 +5,6 @@
     <comment>This interface provides information about the running agent.</comment>
     <field type="string" length="20000" name="history">All actions performed in the past.</field>
     <field type="string" length="20000" name="plan">All planned actions.</field>
+    <field type="string" length="256" name="message">Info message.</field>
   </data>
 </interface>

@@ -12,6 +12,9 @@ class AgentInterface : public Interface
   char * plan();
   void set_plan(const char * new_plan);
   int maxlenof_plan() const;
+  char * message();
+  void set_message(const char * new_message);
+  int maxlenof_message() const;
   bool                    oftype(const char *interface_type) const;
   const void *            datachunk() const;
   unsigned int            datasize() const;

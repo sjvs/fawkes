@@ -48,7 +48,8 @@ AgentInterface::AgentInterface() : Interface()
   memset(data_ptr, 0, data_size);
   add_fieldinfo(IFT_STRING, "history", 20000, data->history);
   add_fieldinfo(IFT_STRING, "plan", 20000, data->plan);
-  unsigned char tmp_hash[] = {0xb5, 0x7, 0xa6, 0xea, 0x3, 0x4, 0x15, 0x59, 0x90, 0xd, 0xde, 0xb6, 0xe0, 0xf8, 0xb1, 0x4f};
+  add_fieldinfo(IFT_STRING, "message", 256, data->message);
+  unsigned char tmp_hash[] = {0x6e, 0x4, 0x90, 0x50, 0xc8, 0xd6, 0xa8, 0x6d, 0x54, 0xf1, 0x9, 0x5d, 0x9d, 0xad, 0xb6, 0x16};
   set_hash(tmp_hash);
 }
 
@@ -117,6 +118,37 @@ void
 AgentInterface::set_plan(const char * new_plan)
 {
   strncpy(data->plan, new_plan, sizeof(data->plan));
+  data_changed = true;
+}
+
+/** Get message value.
+ * Info message.
+ * @return message value
+ */
+char *
+AgentInterface::message() const
+{
+  return data->message;
+}
+
+/** Get maximum length of message value.
+ * @return length of message value, can be length of the array or number of 
+ * maximum number of characters for a string
+ */
+size_t
+AgentInterface::maxlenof_message() const
+{
+  return 256;
+}
+
+/** Set message value.
+ * Info message.
+ * @param new_message new message value
+ */
+void
+AgentInterface::set_message(const char * new_message)
+{
+  strncpy(data->message, new_message, sizeof(data->message));
   data_changed = true;
 }
 
