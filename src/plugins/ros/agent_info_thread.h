@@ -58,8 +58,11 @@ class RosAgentInfoThread
  private:
   void publish_plan(std::string plan, continual_planning_executive::ContinualPlanningStatus::_component_type);
  private:
-  ros::Publisher ros_pub_;
+  ros::Publisher ros_pub_planner_;
+  ros::Publisher ros_pub_agent_message_;
   fawkes::AgentInterface * agent_if_;
+  // remember the last message to check whether the message was actually updated
+  std::string last_agent_message_;
 
 };
 

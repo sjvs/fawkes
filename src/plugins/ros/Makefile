@@ -216,9 +216,11 @@ ifeq ($(HAVE_ROS),1)
   ifeq ($(call ros-have-pkg,continual_planning_executive),1)
     ifeq ($(HAVE_CPP11),1)
 			CFLAGS_agent_info_thread += \
-				 $(call ros-pkg-cflags,continual_planning_executive) $(CFLAGS_CPP11)
+				 $(call ros-pkg-cflags,continual_planning_executive) $(CFLAGS_CPP11) \
+				 $(call ros-pkg-cflags,std_msgs)
       CFLAGS_agent_info_plugin = $(CFLAGS_agent_info_thread)
-      LDFLAGS_agent_info = $(call ros-pkg-lflags,continual_planning_executive)
+      LDFLAGS_agent_info = $(call ros-pkg-lflags,continual_planning_executive) \
+				 $(call ros-pkg-lflags,std_msgs)
       PLUGINS_all += $(PLUGINDIR)/ros-agent-info.so
     else
       WARN_TARGETS += warning_cpp11

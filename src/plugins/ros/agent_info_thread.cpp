@@ -23,6 +23,7 @@
 
 #include <ros/this_node.h>
 #include <continual_planning_executive/ContinualPlanningStatus.h>
+#include <std_msgs/String.h>
 #include <algorithm>
 
 using namespace fawkes;
@@ -49,7 +50,9 @@ RosAgentInfoThread::~RosAgentInfoThread()
 void
 RosAgentInfoThread::init()
 {
-  ros_pub_ = rosnode->advertise<continual_planning_executive::ContinualPlanningStatus>("continual_planning_status", 10);
+  last_agent_message_ = "";
+  ros_pub_planner_ = rosnode->advertise<continual_planning_executive::ContinualPlanningStatus>("continual_planning_status", 10);
+  ros_pub_agent_message_ = rosnode->advertise<std_msgs::String>("agent_info", 10);
   // open interface and listen for changed data
   agent_if_ = blackboard->open_for_reading<AgentInterface>("Agent");
   bbil_add_data_interface(agent_if_);
@@ -63,7 +66,8 @@ RosAgentInfoThread::finalize()
 {
   blackboard->unregister_listener(this);
   blackboard->close(agent_if_);
-  ros_pub_.shutdown();
+  ros_pub_planner_.shutdown();
+  ros_pub_agent_message_.shutdown();
 }
 
 void
@@ -84,6 +88,13 @@ RosAgentInfoThread::bb_interface_data_changed(Interface *interface) throw()
   publish_plan(history + iface->plan(), continual_planning_executive::ContinualPlanningStatus::PLANNING);
 
   publish_plan(iface->plan(), continual_planning_executive::ContinualPlanningStatus::CURRENT_PLAN);
+
+  if (iface->message() != last_agent_message_) {
+    std_msgs::String message;
+    message.data = iface->message();
+    ros_pub_agent_message_.publish(message);
+    last_agent_message_ = iface->message();
+  }
 }
 
 void
@@ -92,6 +103,6 @@ RosAgentInfoThread::publish_plan(string plan, continual_planning_executive::Cont
   status.component = component;
   replace(plan.begin(), plan.end(), ';', '\n');
   status.description = plan;
-  ros_pub_.publish(status);
+  ros_pub_planner_.publish(status);
 }
 
