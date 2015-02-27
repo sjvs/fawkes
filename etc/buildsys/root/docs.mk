@@ -21,12 +21,12 @@ ifndef __buildsys_root_docs_mk_
 __buildsys_root_docs_mk_ := 1
 
 .PHONY: apidoc quickdoc tracdoc
-apidoc: api.doxygen
+apidoc: api.doxygen fawkes.luadoc skiller.luadoc
 quickdoc: api-quick.doxygen
 tracdoc: api-trac.doxygen
 
 %.doxygen:
-	$(SILENT) echo "[DOC] Building documentation ($@). This may take a while..."
+	$(SILENT) echo -e "[DOC] Building documentation ($(TBOLDGRAY)$@$(TNORMAL)). This may take a while..."
 	$(SILENT) rm -rf doc/api
 	$(SILENT) mkdir -p doc/api
 	$(SILENT) $(DOXYGEN) $(DOCDIR)/doxygen/$*$(if $(SUBMODULE_EXTERN),-submodule).doxygen >/dev/null 2>&1
@@ -37,6 +37,12 @@ tracdoc: api-trac.doxygen
 	else \
 		echo -e "$(TGREEN)--> No warnings. Nice job.$(TNORMAL)"; \
 	fi
+
+%.luadoc:
+	$(SILENT) echo "[DOC] Generating luadoc for the skiller..."
+	$(SILENT) rm -rf $(DOCDIR)/lua/$*
+	$(SILENT) mkdir -p $(DOCDIR)/lua/$*
+	$(SILENT) cd src/lua; $(LUADOC) -d $(DOCDIR)/lua/$* $*
 
 endif # __buildsys_root_docs_mk_
 

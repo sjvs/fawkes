@@ -27,9 +27,9 @@ PRESUBDIRS = interfaces
 
 LIBS_robotino = m fawkescore fawkesutils fawkesaspects fawkesbaseapp \
 		fawkesblackboard fawkesinterface MotorInterface GripperInterface \
-		BatteryInterface RobotinoSensorInterface \
+		BatteryInterface RobotinoSensorInterface IMUInterface \
 		rec_iocontrol_robotstate rec_iocontrol_remotestate
-OBJS_robotino = robotino_plugin.o sensor_thread.o act_thread.o
+OBJS_robotino = robotino_plugin.o sensor_thread.o act_thread.o sensor_com_handler.o
 
 LIBS_robotino_joystick = m fawkescore fawkesutils fawkesaspects \
 			 fawkesblackboard fawkesinterface \

@@ -36,6 +36,11 @@ ifeq ($(HAVE_EIGEN3),1)
 		   -DEIGEN_USE_NEW_STDVECTOR \
 		   -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
   LDFLAGS_EIGEN3 = $(shell $(PKGCONFIG) --libs 'eigen3')
+  ifeq ($(CC),clang)
+    ifeq ($(call clang_atleast_version,3,4),1)
+      CFLAGS_EIGEN3 += -Wno-deprecated-register
+    endif
+  endif
 else
   HAVE_PCL = 0
 endif
@@ -71,6 +76,7 @@ ifeq ($(HAVE_PCL),1)
 		 $(shell $(PKGCONFIG) --cflags 'pcl_common$(PCL_VERSION_SUFFIX)') \
 		 -Wno-unknown-pragmas -Wno-deprecated-declarations
   LDFLAGS_PCL += $(LDFLAGS_EIGEN3) \
+		 $(if $(HAVE_ROS),-L$(shell $(PKGCONFIG) --variable libdir 'pcl_common$(PCL_VERSION_SUFFIX)')) \
 		 $(shell $(PKGCONFIG) --libs 'pcl_common$(PCL_VERSION_SUFFIX)')
 
   ifeq ($(CC),clang)

@@ -1,5 +1,7 @@
+LaserClusterInterface.h
 HumanSkeletonProjectionInterface.h
 KatanaInterface.h
+LaserLineInterface.h
 NaoJointPositionInterface.h
 NaoJointStiffnessInterface.h
 NaoSensorInterface.h
@@ -8,6 +10,7 @@ OpenRaveInterface.h
 PanTiltInterface.h
 PclDatabaseMergeInterface.h
 PclDatabaseRetrieveInterface.h
+PclDatabaseStoreInterface.h
 SkillerDebugInterface.h
 RobotinoSensorInterface.h
 Roomba500Interface.h

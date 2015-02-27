@@ -56,3 +56,8 @@ webview:
       mjpeg-fps: 15
       jpeg-vflip: false
 
+  # directories with static files
+  static-dirs: ["@BASEDIR@/res/webview"]
+
+  syncpoints:
+    max_age: 3.0

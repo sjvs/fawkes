@@ -137,7 +137,9 @@ class Stamped : public T{
   /** Default constructor.
    * Default constructor used only for preallocation.
    */
-  Stamped() :frame_id ("NO_ID_STAMPED_DEFAULT_CONSTRUCTION"){};
+  Stamped()
+    : stamp(0,0), frame_id("NO_ID_STAMPED_DEFAULT_CONSTRUCTION")
+  {};
 
   /** Constructor.
    * @param input transform
@@ -217,6 +219,17 @@ create_quaternion_from_yaw(double yaw)
 }
 
 
+/** Construct a Quaternion from an array of quaternion values.
+ * @param q quaternion as array of four values ordered as x, y, z, w
+ * @return The quaternion constructed
+ */
+static inline Quaternion
+create_quaternion_from_array(double *q)
+{
+  return Quaternion(q[0], q[1], q[2], q[3]);
+}
+
+
 /** Helper function for getting yaw from a Quaternion.
  * @param bt_q quaternion to get yaw from
  * @return yaw value
@@ -238,6 +251,24 @@ static inline double get_yaw(Pose& t)
   return yaw;
 }
 
+
+/** Helper function for getting yaw from a Quaternion.
+ * @param q quaternion as array of four values ordered as x, y, z, w
+ * @return yaw value
+ */
+static inline double get_yaw(const double *q)
+{
+  return get_yaw(Quaternion(q[0], q[1], q[2], q[3]));
+}
+
+/** Helper function for getting yaw from a Quaternion.
+ * @param q quaternion as array of four values ordered as x, y, z, w
+ * @return yaw value
+ */
+static inline double get_yaw(const float *q)
+{
+  return get_yaw(Quaternion(q[0], q[1], q[2], q[3]));
+}
 
 } // end namespace tf
 } // end namespace fawkes

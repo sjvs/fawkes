@@ -18,15 +18,17 @@ include $(BASEDIR)/etc/buildsys/config.mk
 
 # base + hardware drivers + perception + functional + integration
 SUBDIRS	= bbsync bblogger webview ttmainloop rrd rrdweb \
-	  laser flite festival joystick openrave \
+	  laser imu flite festival joystick openrave \
 	  katana pantilt roomba nao robotino \
 	  bumblebee2 perception amcl \
-	  skiller luaagent worldmodel laserht laser-filter laser-pointclouds \
-	  static_transforms navgraph \
+	  skiller luaagent worldmodel \
+	  laser-filter laser-lines laser-cluster laser-pointclouds \
+	  static_transforms navgraph colli \
 	  clips clips-agent clips-protobuf clips-webview clips-navgraph clips-ros \
 	  mongodb mongodb_log \
-	  openni refboxcomm ros player xmlrpc
-	  #readylogagent
+	  openni refboxcomm ros player xmlrpc gossip \
+	  robot_state_publisher gazebo
+	  # readylogagent
 
 include $(BUILDSYSDIR)/rules.mk
 
@@ -40,3 +42,4 @@ clips-navgraph clips-agent clips-protobuf: clips
 clips-navgraph: navgraph
 clips-webview: clips webview
 clips-ros: clips ros
+gazebo: robotino

@@ -106,6 +106,8 @@ ClipsAgentThread::init()
 
   switch_if_ = blackboard->open_for_reading<SwitchInterface>("Clips Agent Start");
 
+  MutexLocker lock(clips.objmutex_ptr());
+
   clips->evaluate(std::string("(path-add-subst \"@BASEDIR@\" \"") + BASEDIR + "\")");
   clips->evaluate(std::string("(path-add-subst \"@FAWKES_BASEDIR@\" \"") +
 		  FAWKES_BASEDIR + "\")");
@@ -177,7 +179,7 @@ ClipsAgentThread::loop()
   if (! cfg_skill_sim_) {
     skiller_if_->read();
 
-    if ((skiller_if_->exclusive_controller() == 0) && skiller_if_->has_writer())
+    if ((skiller_if_->exclusive_controller() != skiller_if_->serial()) && skiller_if_->has_writer())
     {
       if (ctrl_recheck_) {
 	logger->log_info(name(), "Acquiring exclusive skiller control");

@@ -7,6 +7,10 @@
 *_tolua.cpp
 *_tolua.pkg
 
+# Generated protobuf files
+*.pb.h
+*.pb.cpp
+
 # Specific paths, _ variants for cross compilation environments
 /access_log
 /bin/
@@ -18,6 +22,7 @@
 /cfg/host.yaml
 /doc/api
 /doc/man
+/doc/lua
 /lib/
 /lib_*/
 /log/
@@ -33,4 +38,3 @@
 # Vim files
 .*.swp
 .*.swo
-
