@@ -34,7 +34,7 @@
 #include <aspect/blocked_timing.h>
 #include <aspect/tf.h>
 #include <aspect/pointcloud.h>
-#include <aspect/syncpoint_manager.h>
+#include <aspect/syncpoint.h>
 
 #include <Eigen/StdVector>
 
@@ -48,7 +48,6 @@
 namespace fawkes {
   class Position3DInterface;
   class SwitchInterface;
-  class SyncPoint;
 #ifdef USE_TIMETRACKER
   class TimeTracker;
 #endif
@@ -106,7 +105,7 @@ class ObjectDetectionThread
   public fawkes::BlockedTimingAspect,
   public fawkes::TransformAspect,
   public fawkes::PointCloudAspect,
-  public fawkes::SyncPointManagerAspect
+  public fawkes::SyncPointAspect
 {
  public:
   ObjectDetectionThread();
@@ -153,10 +152,6 @@ class ObjectDetectionThread
   fawkes::Position3DInterface *table_pos_if_;
 
   fawkes::SwitchInterface *switch_if_;
-
-  /* synchronization */
-  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_in_;
-  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_out_;
 
   /* configuration */
   float cfg_cluster_tolerance_;

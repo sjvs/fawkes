@@ -42,7 +42,8 @@ using namespace fawkes::perception;
 /** Constructor. */
 ObjectTrackingThread::ObjectTrackingThread()
   : Thread("ObjectTrackingThread", Thread::OPMODE_WAITFORWAKEUP),
-    BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS)
+    BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS),
+    SyncPointAspect(SyncPoint::WAIT_FOR_ALL, "/perception/object-detection", "/perception/object-tracking")
 {
 }
 
@@ -120,9 +121,6 @@ ObjectTrackingThread::init()
   centroids_.clear();
   old_centroids_.clear();
 
-  syncpoint_in_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_in_.c_str());
-  syncpoint_out_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_out_.c_str());
-
 }
 
 void
@@ -136,9 +134,6 @@ ObjectTrackingThread::finalize()
   }
   blackboard->close(switch_if_);
 
-
-  syncpoint_manager->release_syncpoint(name(), syncpoint_in_);
-  syncpoint_manager->release_syncpoint(name(), syncpoint_out_);
 }
 
 void
@@ -204,13 +199,6 @@ ObjectTrackingThread::loop()
   }
 
   if (! switch_if_->is_enabled()) {
-    return;
-  }
-
-  try {
-    syncpoint_in_->wait(name());
-  } catch (const SyncPointMultipleWaitCallsException &e) {
-    logger->log_warn(name(), "Tried to run, but already running.");
     return;
   }
 
@@ -283,7 +271,6 @@ ObjectTrackingThread::loop()
   if (!centroids_.empty())
     first_run_ = false;
 
-  syncpoint_out_->emit(name());
 }
 
 /**

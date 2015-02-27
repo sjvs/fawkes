@@ -75,7 +75,8 @@ using namespace fawkes::perception;
 /** Constructor. */
 TabletopVisualizationThread::TabletopVisualizationThread()
 : fawkes::Thread("TabletopVisualizationThread", Thread::OPMODE_WAITFORWAKEUP),
-  BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS)
+  BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS),
+  SyncPointAspect(SyncPoint::WAIT_FOR_ALL, "/perception", "")
 {
 }
 
@@ -139,8 +140,6 @@ TabletopVisualizationThread::init()
   model_hull_if_ = blackboard->open_for_reading<TabletopHullInterface>("tabletop-model-hull");
   good_hull_edges_if_ = blackboard->open_for_reading<TabletopEdgesInterface>("tabletop-good-edges");
 
-  syncpoint_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_.c_str());
-
   switch_if_ = blackboard->open_for_writing<SwitchInterface>("tabletop-visualization");
   switch_if_->set_enabled(true);
   switch_if_->write();
@@ -167,7 +166,6 @@ TabletopVisualizationThread::finalize()
   blackboard->close(model_hull_if_);
   blackboard->close(good_hull_edges_if_);
 
-  syncpoint_manager->release_syncpoint(name(), syncpoint_);
 }
 
 
@@ -192,13 +190,6 @@ TabletopVisualizationThread::loop()
 
   if (! switch_if_->is_enabled()) {
     delete_all_markers();
-    return;
-  }
-
-  try {
-    syncpoint_->wait(name());
-  } catch (const SyncPointMultipleWaitCallsException &e) {
-    logger->log_warn(name(), "Tried to run, but already running.");
     return;
   }
 

@@ -34,7 +34,7 @@
 #include <aspect/blocked_timing.h>
 #include <aspect/pointcloud.h>
 #include <aspect/tf.h>
-#include <aspect/syncpoint_manager.h>
+#include <aspect/syncpoint.h>
 
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
@@ -67,7 +67,7 @@ class TabletopDetectionThread
   public fawkes::BlockedTimingAspect,
   public fawkes::TransformAspect,
   public fawkes::PointCloudAspect,
-  public fawkes::SyncPointManagerAspect
+  public fawkes::SyncPointAspect
 {
  public:
   TabletopDetectionThread();
@@ -153,9 +153,6 @@ class TabletopDetectionThread
   pcl::SACSegmentation<fawkes::perception::PointType> seg_;
   fawkes::Time *last_pcl_time_;
   unsigned int loop_count_;
-
-  /* synchronization */
-  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_;
 
 #ifdef USE_TIMETRACKER
   fawkes::TimeTracker  *tt_;

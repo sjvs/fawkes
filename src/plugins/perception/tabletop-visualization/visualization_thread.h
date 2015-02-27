@@ -36,7 +36,7 @@
 #include <aspect/blackboard.h>
 #include <aspect/blocked_timing.h>
 #include <aspect/logging.h>
-#include <aspect/syncpoint_manager.h>
+#include <aspect/syncpoint.h>
 #include <plugins/ros/aspect/ros.h>
 #include <interfaces/Position3DInterface.h>
 #include <interfaces/SwitchInterface.h>
@@ -70,7 +70,7 @@ class TabletopVisualizationThread
   public fawkes::ROSAspect,
   public fawkes::BlackBoardAspect,
   public fawkes::LoggingAspect,
-  public fawkes::SyncPointManagerAspect
+  public fawkes::SyncPointAspect
 {
  public:
 
@@ -104,9 +104,6 @@ class TabletopVisualizationThread
   std::string frame_id_;
 
   fawkes::SwitchInterface *switch_if_;
-
-  /* synchronization */
-  fawkes::RefPtr<fawkes::SyncPoint> syncpoint_;
 
   unsigned int cfg_duration_;
   std::string cfg_object_name_pattern_;

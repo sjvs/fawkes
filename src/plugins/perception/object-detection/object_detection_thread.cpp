@@ -53,7 +53,8 @@ using namespace fawkes::perception;
 ObjectDetectionThread::ObjectDetectionThread()
 : Thread("ObjectDetectionThread", Thread::OPMODE_WAITFORWAKEUP),
   BlockedTimingAspect(BlockedTimingAspect::WAKEUP_HOOK_SENSOR_PROCESS),
-  TransformAspect(TransformAspect::ONLY_LISTENER)
+  TransformAspect(TransformAspect::ONLY_LISTENER),
+  SyncPointAspect(SyncPoint::WAIT_FOR_ALL, "/perception/tabletop-detection", "/perception/object-detection")
 {
 }
 
@@ -156,9 +157,6 @@ ObjectDetectionThread::init()
 
   centroids_.clear();
 
-  syncpoint_in_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_in_.c_str());
-  syncpoint_out_ = syncpoint_manager->get_syncpoint(name(), cfg_syncpoint_out_.c_str());
-
 #ifdef USE_TIMETRACKER
   tt_ = new TimeTracker();
   tt_loopcount_ = 0;
@@ -201,8 +199,6 @@ ObjectDetectionThread::finalize()
     it->reset();
   }
 
-  syncpoint_manager->release_syncpoint(name(), syncpoint_in_);
-  syncpoint_manager->release_syncpoint(name(), syncpoint_out_);
 }
 
 void
@@ -235,16 +231,6 @@ ObjectDetectionThread::loop()
     TIMETRACK_ABORT(ttc_full_loop_);
     return;
   }
-
-  TIMETRACK_START(ttc_syncpoint_wait_);
-  try {
-    syncpoint_in_->wait(name());
-  } catch (const SyncPointMultipleWaitCallsException &e) {
-    logger->log_warn(name(), "Tried to run, but already running.");
-    TIMETRACK_ABORT(ttc_syncpoint_wait_);
-    return;
-  }
-  TIMETRACK_END(ttc_syncpoint_wait_);
 
   table_pos_if_->read();
   if (table_pos_if_->visibility_history() < 0) {
@@ -298,8 +284,6 @@ ObjectDetectionThread::loop()
       }
       pcl_utils::copy_time(input_, f_obj_clusters_[i]);
     }
-
-    syncpoint_out_->emit(name());
 
     TIMETRACK_END(ttc_full_loop_);
 #ifdef USE_TIMETRACKER
