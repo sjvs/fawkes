@@ -30,6 +30,7 @@
 #  include <utils/time/tracker.h>
 #endif
 #include <utils/time/tracker_macros.h>
+#include <baseapp/run.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -319,7 +320,7 @@ LaserLinesThread::loop()
     Eigen::Vector3f x_axis(1,0,0);
     info.bearing = acosf(x_axis.dot(P) / P.norm());
     // we also want to encode the direction of the angle
-    if (coeff->values[1] < 0)  info.bearing *= -1.;
+    if (P[1] < 0)  info.bearing = fabs(info.bearing)*-1.;
 
     info.base_point = P;
 
@@ -509,7 +510,9 @@ LaserLinesThread::loop()
 #endif
 
   //*lines_ = *tmp_lines;
-  if (finput_->header.frame_id == "") {
+  if (finput_->header.frame_id == "" &&
+      fawkes::runtime::uptime() >= tf_listener->get_cache_time())
+  {
     logger->log_error(name(), "Empty frame ID");
   }
   flines_->header.frame_id = finput_->header.frame_id;

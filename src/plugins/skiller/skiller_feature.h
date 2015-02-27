@@ -1,10 +1,8 @@
-
 /***************************************************************************
- *  robotino_joystick_plugin.cpp - Plugin for Robotino joystick control
+ *  skiller_feature.h - Additional skiller feature base class
  *
- *  Created: Sun Nov 13 23:20:35 2011
- *  Copyright  2011  Tim Niemueller [www.niemueller.de]
- *
+ *  Created: Wed Jul 16 13:16:01 2014 (on flight to Joao Pessoa)
+ *  Copyright  2014  Tim Niemueller [www.niemueller.de]
  ****************************************************************************/
 
 /*  This program is free software; you can redistribute it and/or modify
@@ -20,27 +18,25 @@
  *  Read the full text in the LICENSE.GPL file in the doc directory.
  */
 
-#include <core/plugin.h>
+#ifndef __PLUGINS_SKILLER_SKILLER_FEATURE_H_
+#define __PLUGINS_SKILLER_SKILLER_FEATURE_H_
 
-#include "joystick_thread.h"
+#include <core/threading/thread.h>
+#include <aspect/configurable.h>
+#include <aspect/logging.h>
 
-using namespace fawkes;
+namespace fawkes {
+  class LuaContext;
+}
 
-/** Plugin to remote control a Robotino using a joystick.
- * @author Tim Niemueller
- */
-class RobotinoJoystickPlugin : public fawkes::Plugin
+class SkillerFeature
 {
  public:
-  /** Constructor.
-   * @param config Fawkes configuration
-   */
-  RobotinoJoystickPlugin(Configuration *config)
-    : Plugin(config)
-  {
-    thread_list.push_back(new RobotinoJoystickThread());
-  }
+  virtual ~SkillerFeature();
+
+  virtual void init_lua_context(fawkes::LuaContext *context) = 0;
+  virtual void finalize_lua_context(fawkes::LuaContext *context) = 0;
+
 };
 
-PLUGIN_DESCRIPTION("Robotino joystick control")
-EXPORT_PLUGIN(RobotinoJoystickPlugin)
+#endif
