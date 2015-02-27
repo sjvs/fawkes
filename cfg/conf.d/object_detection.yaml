@@ -22,6 +22,8 @@ perception/object-detection:
   # max height of a centroid relative to the table
   centroid_max_height: 0.3
 
+  centroid_min_distance_to_base: -1.0
+
   # SyncPoint to wait for at the beginning of the loop
   syncpoint_in: "/perception/tabletop-detection"
   # SyncPoint to emit at the end of the loop

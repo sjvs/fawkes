@@ -39,7 +39,7 @@ perception/tabletop-detection:
   max_z_angle_deviation: 0.1
 
   # Minimum required height of table; m
-  table_min_height: 0.6
+  table_min_height: -0.4
 
   # Maximum height of table; m
   table_max_height: 0.9

@@ -5,7 +5,7 @@ doc-url: !url http://trac.fawkesrobotics.org/wiki/Plugins/tabletop-objects
 ---
 perception/object-tracking:
   # Input interface names (regexp)
-  interfaces_in: "Fitted Object *"
+  interfaces_in: "Tabletop Object *"
   # Output interface names (base name)
   interfaces_out: "Tracked Object %u"
   # max number of loops a centroid is saved
@@ -18,6 +18,6 @@ perception/object-tracking:
   centroid_min_distance: 0.01
 
   # SyncPoint to wait for at the beginning of the loop
-  syncpoint_in: "/perception/object-fitting"
+  syncpoint_in: "/perception/object-detection"
   # SyncPoint to emit at the end of the loop
   syncpoint_out: "/perception/object-tracking"
