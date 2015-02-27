@@ -36,7 +36,7 @@ CFLAGS += $(CFLAGS_CPP11) -Wno-unknown-pragmas
 # Enable for time measurements
 #CFLAGS += -DUSE_TIMETRACKER
 
-LIBS_laser_lines = fawkescore fawkesutils fawkesaspects fvutils \
+LIBS_laser_lines = fawkescore fawkesutils fawkesaspects fvutils fawkesbaseapp \
 			fawkestf fawkesinterface fawkesblackboard fawkespcl_utils \
 			Position3DInterface SwitchInterface LaserLineInterface
 OBJS_laser_lines = laser-lines-plugin.o laser-lines-thread.o
@@ -97,7 +97,7 @@ warning_pcl:
 warning_pcl_components:
 	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting laser-lines plugin$(TNORMAL) (missing PCL components: $(call pcl-missing-libs,$(REQUIRED_PCL_LIBS)))"
 warning_old_gcc:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting CLIPS Plugins$(TNORMAL) (GCC too old, have $(GCC_VERSION), required 4.6)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting laser-lines plugin$(TNORMAL) (GCC too old, have $(GCC_VERSION), required 4.6)"
 endif
 
 include $(BUILDSYSDIR)/base.mk

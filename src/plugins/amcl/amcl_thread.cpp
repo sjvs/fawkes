@@ -33,6 +33,7 @@
 #include <utils/math/angle.h>
 #include <core/threading/mutex.h>
 #include <core/threading/mutex_locker.h>
+#include <baseapp/run.h>
 #include <cstdlib>
 #include <cstdio>
 
@@ -370,7 +371,9 @@ AmclThread::loop()
       laser_pose_set_ = true;
       apply_initial_pose();
     } else {
-      logger->log_warn(name(), "Could not determine laser pose, skipping loop");
+      if (fawkes::runtime::uptime() >= tf_listener->get_cache_time()) {
+	logger->log_warn(name(), "Could not determine laser pose, skipping loop");
+      }
       return;
     }
   }
@@ -400,14 +403,22 @@ AmclThread::loop()
 	if (!get_odom_pose(odom_pose, pose.v[0], pose.v[1], pose.v[2],
 			   &buffer_timestamp, base_frame_id_))
 	{
-	  // could not even use the buffered scan, buffer current one
-	  // and try that one next time
-	  if (cfg_buffer_debug_) {
+	  fawkes::Time zero_time(0, 0);
+	  if (! get_odom_pose(odom_pose, pose.v[0], pose.v[1], pose.v[2],
+			      &zero_time, base_frame_id_))
+	  {
+	    // could not even use the buffered scan, buffer current one
+	    // and try that one next time, always warn, this is bad
 	    logger->log_warn(name(), "Couldn't determine robot's pose "
-			     "associated with buffered laser scan, re-buffering");
+			     "associated with buffered laser scan nor at "
+			     "current time, re-buffering");
+	    laser_if_->copy_private_to_buffer(0);
+	    return;
+	  } else {
+	    // we got a transform at some time, it is by far not as good
+	    // as the correct value, but will at least allow us to go on
+	    laser_buffered_ = false;
 	  }
-	  laser_if_->copy_private_to_buffer(0);
-	  return;
 	} else {
 	  // yay, that worked, use that one, re-buffer current data
 	  if (cfg_buffer_debug_) {
@@ -962,9 +973,11 @@ AmclThread::set_laser_pose()
     //logger->log_error(name(), e);
     return false;
   } catch (fawkes::Exception& e) {
-    logger->log_error(name(), "Generic exception for transform from %s to %s.",
-                      laser_frame_id_.c_str(), base_frame_id_.c_str());
-    logger->log_error(name(), e);
+    if (fawkes::runtime::uptime() >= tf_listener->get_cache_time()) {
+      logger->log_error(name(), "Generic exception for transform from %s to %s.",
+			laser_frame_id_.c_str(), base_frame_id_.c_str());
+      logger->log_error(name(), e);
+    }
     return false;
   }
 
