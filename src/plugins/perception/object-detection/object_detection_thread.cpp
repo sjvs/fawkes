@@ -327,6 +327,7 @@ ObjectDetectionThread::cluster_objects(CloudConstPtr input_cloud,
     std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f>> new_centroids(MAX_CENTROIDS);
 
     unsigned int centroid_i = 0;
+    object_count = 0;
     for (it = cluster_indices.begin();
         it != cluster_indices.end() && centroid_i < MAX_CENTROIDS;
         ++it, ++centroid_i)
@@ -350,10 +351,17 @@ ObjectDetectionThread::cluster_objects(CloudConstPtr input_cloud,
       // don't add cluster here since the id is wrong
       //*obj_clusters_[obj_i++] = *single_cluster;
 
-pcl_utils::transform_pointcloud("/base_link", *single_cluster,
-        *obj_in_base_frame, *tf_listener);
+
+      try {
+        pcl_utils::transform_pointcloud("/base_link", *single_cluster,
+          *obj_in_base_frame, *tf_listener);
+      } catch (tf::TransformException &e) {
+        logger->log_warn(name(), "failed to transform object pointcloud for centroid %u", centroid_i);
+        continue;
+      }
 
       pcl::compute3DCentroid(*obj_in_base_frame, new_centroids[centroid_i]);
+      object_count++;
 
 //      if (cfg_cylinder_fitting_) {
 //        new_centroids[centroid_i] = fit_cylinder(obj_in_base_frame,
@@ -362,7 +370,6 @@ pcl_utils::transform_pointcloud("/base_link", *single_cluster,
 
 
     }
-    object_count = centroid_i;
     new_centroids.resize(object_count);
 
 
