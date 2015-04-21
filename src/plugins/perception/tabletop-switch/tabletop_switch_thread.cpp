@@ -93,24 +93,25 @@ TabletopSwitchThread::loop()
 {
 
   bool last_switch_state = switch_if_->is_enabled();
+  bool new_state = last_switch_state;
   while (! switch_if_->msgq_empty()) {
     if (SwitchInterface::EnableSwitchMessage *msg =
         switch_if_->msgq_first_safe(msg))
     {
-      switch_if_->set_enabled(true);
-      switch_if_->write();
+      new_state = true;
     } else if (SwitchInterface::DisableSwitchMessage *msg =
         switch_if_->msgq_first_safe(msg))
     {
-      switch_if_->set_enabled(false);
-      switch_if_->write();
+      new_state = false;
     }
 
     switch_if_->msgq_pop();
   }
 
-  if (last_switch_state != switch_if_->is_enabled()) {
-    msg_all_interfaces(switch_if_->is_enabled());
+  if (last_switch_state != new_state) {
+    msg_all_interfaces(new_state);
+    switch_if_->set_enabled(new_state);
+    switch_if_->write();
   }
 }
 
