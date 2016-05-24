@@ -313,6 +313,7 @@ init(InitOptions options, int & retval)
     net_tcp_port = 1910;
   }
 
+#ifdef HAVE_BLACKBOARD
   // *** Setup blackboard
   std::string bb_magic_token = "";
   unsigned int bb_size = 2097152;
@@ -345,6 +346,7 @@ init(InitOptions options, int & retval)
     lbb = new LocalBlackBoard(bb_size, bb_magic_token.c_str());
   }
   blackboard = lbb;
+#endif
 
 #ifdef HAVE_TF
   tf_transformer     = new tf::Transformer();
@@ -358,15 +360,20 @@ init(InitOptions options, int & retval)
 					 "/fawkes/meta_plugins/",
 					 options.plugin_module_flags(),
 					 options.init_plugin_cache());
+#ifdef HAVE_NETWORK_MANAGER
   network_manager    = new FawkesNetworkManager(thread_manager,
 						net_tcp_port,
 						net_service_name.c_str());
+#  ifdef HAVE_CONFIG_NETWORK_HANDLER
   nethandler_config  = new ConfigNetworkHandler(config,
 						network_manager->hub());
-
+#  endif
+#  ifdef HAVE_PLUGIN_NETWORK_HANDLER
   nethandler_plugin  = new PluginNetworkHandler(plugin_manager,
 						network_manager->hub());
   nethandler_plugin->start();
+#  endif
+#endif
 
   network_logger = new NetworkLogger(network_manager->hub(),
 				     logger->loglevel());
@@ -375,7 +382,9 @@ init(InitOptions options, int & retval)
   clock = Clock::instance();
   start_time = new Time(clock);
 
+#if defined(HAVE_NETWORK_MANAGER) && defined(HAVE_BLACKBOARD)
   lbb->start_nethandler(network_manager->hub());
+#endif
 
 
   // *** Create main thread, but do not start, yet
