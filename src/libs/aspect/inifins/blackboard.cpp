@@ -56,6 +56,11 @@ BlackBoardAspectIniFin::init(Thread *thread)
 					  "has not. ", thread->name());
   }
 
+  if (! __blackboard) {
+	  throw CannotInitializeThreadException("Thread '%s' needs BlackBoardAspect, "
+	                                        "but not blackboard available");
+  }
+
   BlackBoard *bb;
   if (blackboard_thread->blackboard_owner_name_) {
     bb = new BlackBoardWithOwnership(__blackboard,
