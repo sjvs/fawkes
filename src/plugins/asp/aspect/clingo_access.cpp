@@ -380,7 +380,7 @@ ClingoAccess::assign_external(const Clingo::Symbol atom, const Clingo::TruthValu
 					case Clingo::TruthValue::False : ret = "False"; break;
 				} //switch ( value )
 				return ret;
-			}, atom.to_string().c_str());
+			}(), atom.to_string().c_str());
 	} //if ( Debug )
 	Control.assign_external(atom, value);
 	return true;
