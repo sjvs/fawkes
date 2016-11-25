@@ -22,7 +22,7 @@
 #include "agent_info_thread.h"
 
 #include <ros/this_node.h>
-#include <continual_planning_executive/ContinualPlanningStatus.h>
+#include <continual_planning_msgs/ContinualPlanningStatus.h>
 #include <std_msgs/String.h>
 #include <algorithm>
 
@@ -51,7 +51,7 @@ void
 RosAgentInfoThread::init()
 {
   last_agent_message_ = "";
-  ros_pub_planner_ = rosnode->advertise<continual_planning_executive::ContinualPlanningStatus>("continual_planning_status", 10);
+  ros_pub_planner_ = rosnode->advertise<continual_planning_msgs::ContinualPlanningStatus>("continual_planning_status", 10);
   ros_pub_agent_message_ = rosnode->advertise<std_msgs::String>("agent_info", 10);
   // open interface and listen for changed data
   agent_if_ = blackboard->open_for_reading<AgentInterface>("Agent");
@@ -85,9 +85,9 @@ RosAgentInfoThread::bb_interface_data_changed(Interface *interface) throw()
   if (history.back() != ';') {
     history.push_back(';');
   }
-  publish_plan(history + iface->plan(), continual_planning_executive::ContinualPlanningStatus::PLANNING);
+  publish_plan(history + iface->plan(), continual_planning_msgs::ContinualPlanningStatus::PLANNING);
 
-  publish_plan(iface->plan(), continual_planning_executive::ContinualPlanningStatus::CURRENT_PLAN);
+  publish_plan(iface->plan(), continual_planning_msgs::ContinualPlanningStatus::CURRENT_PLAN);
 
   if (iface->message() != last_agent_message_) {
     std_msgs::String message;
@@ -98,8 +98,8 @@ RosAgentInfoThread::bb_interface_data_changed(Interface *interface) throw()
 }
 
 void
-RosAgentInfoThread::publish_plan(string plan, continual_planning_executive::ContinualPlanningStatus::_component_type component) {
-  continual_planning_executive::ContinualPlanningStatus status;
+RosAgentInfoThread::publish_plan(string plan, continual_planning_msgs::ContinualPlanningStatus::_component_type component) {
+  continual_planning_msgs::ContinualPlanningStatus status;
   status.component = component;
   replace(plan.begin(), plan.end(), ';', '\n');
   status.description = plan;

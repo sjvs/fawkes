@@ -213,20 +213,20 @@ ifeq ($(HAVE_ROS),1)
 
   PLUGINS_all += $(PLUGINDIR)/ros-robot-description.so
 
-  ifeq ($(call ros-have-pkg,continual_planning_executive),1)
+  ifeq ($(call ros-have-pkg,continual_planning_msgs),1)
     ifeq ($(HAVE_CPP11),1)
 			CFLAGS_agent_info_thread += \
-				 $(call ros-pkg-cflags,continual_planning_executive) $(CFLAGS_CPP11) \
+				 $(call ros-pkg-cflags,continual_planning_msgs) $(CFLAGS_CPP11) \
 				 $(call ros-pkg-cflags,std_msgs)
       CFLAGS_agent_info_plugin = $(CFLAGS_agent_info_thread)
-      LDFLAGS_agent_info = $(call ros-pkg-lflags,continual_planning_executive) \
+      LDFLAGS_agent_info = $(call ros-pkg-lflags,continual_planning_msgs) \
 				 $(call ros-pkg-lflags,std_msgs)
       PLUGINS_all += $(PLUGINDIR)/ros-agent-info.so
     else
       WARN_TARGETS += warning_cpp11
     endif
   else
-    WARN_TARGETS += warning_continual_planning_executive
+    WARN_TARGETS += warning_continual_planning_msgs
   endif
 
 else
@@ -268,9 +268,9 @@ warning_actionlib:
 warning_sensor_msgs:
 	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting ROS JointState Plugin$(TNORMAL) (ROS package sensor_msgs not found)"
 warning_cpp11:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting Agent Info Plugin$(TNORMAL) (C++11 not supported)"
-warning_continual_planning_executive:
-	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting Agent Info Plugin$(TNORMAL) (ROS package continual_planning_executive not found)"
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting ROS Agent Info Plugin$(TNORMAL) (C++11 not supported)"
+warning_continual_planning_msgs:
+	$(SILENT)echo -e "$(INDENT_PRINT)--> $(TRED)Omitting ROS Agent Info Plugin$(TNORMAL) (ROS package continual_planning_msgs not found)"
 endif
 
 include $(BUILDSYSDIR)/base.mk

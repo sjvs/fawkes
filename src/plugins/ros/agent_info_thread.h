@@ -37,7 +37,7 @@
 // from ROS
 #include <ros/node_handle.h>
 
-#include <continual_planning_executive/ContinualPlanningStatus.h>
+#include <continual_planning_msgs/ContinualPlanningStatus.h>
 
 class RosAgentInfoThread
 : public fawkes::Thread,
@@ -56,7 +56,7 @@ class RosAgentInfoThread
   virtual void bb_interface_data_changed(fawkes::Interface *interface) throw();
 
  private:
-  void publish_plan(std::string plan, continual_planning_executive::ContinualPlanningStatus::_component_type);
+  void publish_plan(std::string plan, continual_planning_msgs::ContinualPlanningStatus::_component_type);
  private:
   ros::Publisher ros_pub_planner_;
   ros::Publisher ros_pub_agent_message_;
