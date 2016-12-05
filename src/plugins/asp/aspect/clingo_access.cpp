@@ -186,10 +186,10 @@ ClingoAccess::solvingFinished(const Clingo::SolveResult result)
  * @brief Allocates the control object and initializes the logger.
  */
 void
-ClingoAccess::allocControl()
+ClingoAccess::allocControl(void)
 {
 	assert(!Control);
-	Control = new Clingo::Control({},
+	Control = new Clingo::Control({"--heur=Domain"/*, "--output-debug=translate"*/},
 		[this](const Clingo::WarningCode code, char const *msg)
 		{
 			fawkes::Logger::LogLevel level = fawkes::Logger::LL_NONE;
