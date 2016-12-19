@@ -189,7 +189,7 @@ void
 ClingoAccess::allocControl(void)
 {
 	assert(!Control);
-	Control = new Clingo::Control({"--heur=Domain"/*, "--output-debug=translate"*/},
+	Control = new Clingo::Control({},
 		[this](const Clingo::WarningCode code, char const *msg)
 		{
 			fawkes::Logger::LogLevel level = fawkes::Logger::LL_NONE;
