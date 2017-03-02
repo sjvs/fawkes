@@ -559,7 +559,7 @@ DynamixelDriverThread::goto_angle_timed(unsigned int servo_id, float angle, floa
   if (req_angle_vel > s.max_speed) {
     logger->log_warn(name(), "Requested move to %f in %f sec requires a "
 		     "angle speed of %f rad/s, which is greater than the maximum "
-		     "of %f rad/s, reducing to max", angle, time_sec, req_angle_vel);
+		     "of %f rad/s, reducing to max", angle, time_sec, req_angle_vel, s.max_speed);
     req_angle_vel = s.max_speed;
   }
   set_velocity(servo_id, req_angle_vel);
