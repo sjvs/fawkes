@@ -456,7 +456,7 @@ DynamixelDriverThread::set_enabled(unsigned int servo_id, bool enabled)
 
   Servo &s = servos_[servo_id];
 
-  logger->log_debug(name(), "Lock %zu", __LINE__);
+  logger->log_debug(name(), "Lock %d", __LINE__);
   ScopedRWLock lock(s.value_rwlock);
   if (enabled) {
     s.enable  = true;
@@ -466,7 +466,7 @@ DynamixelDriverThread::set_enabled(unsigned int servo_id, bool enabled)
     s.disable = true;
   }
   wakeup();
-  logger->log_debug(name(), "UNLock %zu", __LINE__);
+  logger->log_debug(name(), "UNLock %d", __LINE__);
 }
 
 
@@ -483,7 +483,7 @@ DynamixelDriverThread::set_led_enabled(unsigned int servo_id, bool enabled)
   }
 
   Servo &s = servos_[servo_id];
-  logger->log_debug(name(), "Lock %zu", __LINE__);
+  logger->log_debug(name(), "Lock %d", __LINE__);
   ScopedRWLock lock(s.value_rwlock);
   if (enabled) {
     s.led_enable  = true;
@@ -493,7 +493,7 @@ DynamixelDriverThread::set_led_enabled(unsigned int servo_id, bool enabled)
     s.led_disable = true;
   }
   wakeup();
-  logger->log_debug(name(), "UNLock %zu", __LINE__);
+  logger->log_debug(name(), "UNLock %d", __LINE__);
 }
 
 
@@ -526,12 +526,12 @@ DynamixelDriverThread::goto_angle(unsigned int servo_id, float angle)
 
   Servo &s = servos_[servo_id];
 
-  logger->log_debug(name(), "Lock %zu", __LINE__);
+  logger->log_debug(name(), "Lock %d", __LINE__);
   ScopedRWLock lock(s.value_rwlock);
   s.target_angle = angle;
   s.move_pending = true;
   wakeup();
-  logger->log_debug(name(), "UNLock %zu", __LINE__);
+  logger->log_debug(name(), "UNLock %d", __LINE__);
 }
 
 
