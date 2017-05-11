@@ -21,7 +21,7 @@
  */
 
 #include "openprs_comm.h"
-#include "proc.h"
+#include "utils/sub_process/proc.h"
 #include "openprs_server_proxy.h"
 #include <core/exception.h>
 #include <core/exceptions/system.h>
