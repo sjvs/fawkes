@@ -125,8 +125,24 @@ OpenPRSThread::init()
     proc_srv_ = NULL;
   }
 
+
 #if BOOST_VERSION >= 104800
   logger->log_info(name(), "Verifying OPRS-server availability");
+
+  // do{
+  // boost::asio::connect (server_socket_, iter , ec);
+  //   logger->log_info(name(), "synchronous ec is... %s", ec.message().c_str());
+  // }
+  // while (ec || ec == boost::asio::error::would_block);
+  // if ( ec ) { 
+  // logger->log_info(name(), "synchronous didnt work... %s", ec.message().c_str());
+
+  //The problem in this is that if the connection is refused once (For example it oprs-server didnt have enough time to start)
+  //the whole connection operation is aborted and the processes running the oprs-server and mp are also closed.
+  //This will only succeed if the server is ganateed to be up by the time we try to connect. Another solution would be to busy wait till the server is up 
+  //bottom line. It will attempet to establish the connection only once!     
+    
+  usleep(2000000); 
 
   boost::asio::ip::tcp::resolver resolver(io_service_);
   boost::asio::ip::tcp::resolver::query query(cfg_server_host_, cfg_server_port_s_);
