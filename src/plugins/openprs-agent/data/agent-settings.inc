@@ -8,7 +8,6 @@
 ;---------------------------------------------------------------------------
 
 include "new-default.inc"
-include "meta-intended-goal.inc"
 
 ; debug tracing configuration
 trace receive off
