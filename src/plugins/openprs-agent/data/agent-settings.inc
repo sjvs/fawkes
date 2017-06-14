@@ -19,7 +19,7 @@ declare predicate agent-settings-load
 
 include "config.inc"
 
-execute-command "set symbol off"
+<!-- execute-command "set symbol off" -->
 
 load opf "agent-settings.opf"
 
