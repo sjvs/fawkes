@@ -244,6 +244,7 @@ DynamixelDriverThread::finalize()
 void
 DynamixelDriverThread::exec_sensor()
 {
+  logger->log_debug(name(), "start exec_sensor");
   if (has_fresh_data()) {
     for (auto &sp : servos_) {
       unsigned int servo_id = sp.first;
@@ -308,6 +309,7 @@ DynamixelDriverThread::exec_sensor()
       s.joint_if->write();
     }
   }
+  logger->log_debug(name(), "end exec_sensor");
 }
 
 
@@ -315,6 +317,7 @@ DynamixelDriverThread::exec_sensor()
 void
 DynamixelDriverThread::exec_act()
 {
+  logger->log_debug(name(), "start exec_act");
   for (auto &sp : servos_) {
     unsigned int servo_id = sp.first;
     Servo &s = sp.second;
@@ -412,6 +415,7 @@ DynamixelDriverThread::exec_act()
     }
     if (write_led_if) s.led_if->write();
   }
+  logger->log_debug(name(), "end exec_act");
 }
 
 
