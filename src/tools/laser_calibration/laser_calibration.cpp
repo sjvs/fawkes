@@ -28,6 +28,7 @@
 #include <tf/transform_listener.h>
 #include <interfaces/Laser360Interface.h>
 #include <interfaces/Laser720Interface.h>
+#include <interfaces/MotorInterface.h>
 #include <utils/hungarian_method/hungarian.h>
 
 #include <pcl/point_cloud.h>
@@ -35,6 +36,7 @@
 #include <pcl/filters/filter.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/common/geometry.h>
+#include <pcl/registration/icp.h>
 
 #include <string>
 #include <map>
@@ -55,7 +57,16 @@ typedef Laser360Interface LaserInterface;
 void
 print_usage(const char *program_name)
 {
-  printf("Usage: %s [-h]\n", program_name);
+  printf("Usage: %s [-h] [-r host[:port]]\n"
+      " -h                 This help message\n"
+      " -r host[:port]     Remote host (and optionally port) to connect to\n"
+      " -f front-laser-id  The ID of the front laser blackboard interface\n"
+      " -b back-laser-id   The ID of the back laser blackboard interface\n"
+      " -R                 Skip roll calibration\n"
+      " -P                 Skip pitch calibration\n"
+      " -Y                 Skip yaw calibration\n"
+      " -T                 Skip time offset calibration\n",
+      program_name);
 }
 
 inline float
@@ -101,10 +112,9 @@ protected:
   void
   transform_pointcloud(const string &target_frame, PointCloudPtr cloud) {
     for (auto &point : cloud->points) {
-      // TODO: convert time stamp correctly
      tf::Stamped<tf::Point> point_in_laser_frame(
          tf::Point(point.x, point.y, point.z),
-         fawkes::Time(), cloud->header.frame_id);
+         fawkes::Time(0., cloud->header.stamp), cloud->header.frame_id);
      tf::Stamped<tf::Point> point_in_base_frame;
      tf_transformer_->transform_point(
          target_frame, point_in_laser_frame, point_in_base_frame);
@@ -153,6 +163,67 @@ protected:
     PointCloudPtr output(new PointCloud());
     pass.filter(*output);
     return output;
+  }
+  PointCloudPtr filter_out_ground(PointCloudPtr input) {
+    pcl::PassThrough<Point> pass;
+    pass.setInputCloud(input);
+    pass.setFilterFieldName("z");
+    pass.setFilterLimits(0.1, 1);
+    PointCloudPtr output(new PointCloud());
+    pass.filter(*output);
+    return output;
+  }
+  float get_matching_cost(
+      PointCloudPtr cloud1, PointCloudPtr cloud2, float *rot_yaw)
+  {
+    if (cloud1->points.size() < min_points || cloud2->points.size() < min_points) {
+      stringstream error;
+      error << "Not enough points, got " << cloud1->points.size() << " and "
+          << cloud2->points.size() << " points, need " << min_points;
+      throw InsufficientDataException(error.str().c_str());
+    }
+    pcl::IterativeClosestPoint<Point, Point> icp;
+    icp.setInputCloud(cloud2);
+    icp.setInputTarget(cloud1);
+    PointCloud final;
+    icp.align(final);
+    if (!icp.hasConverged()) {
+      throw InsufficientDataException("ICP did not converge.");
+    }
+    if (rot_yaw) {
+      pcl::Registration<Point, Point, float>::Matrix4 transformation =
+          icp.getFinalTransformation();
+      *rot_yaw = atan2(transformation(1,0), transformation(0,0));
+    }
+    return icp.getFitnessScore();
+  }
+  PointCloudPtr filter_center_cloud(PointCloudPtr input) {
+    pcl::PassThrough<Point> pass_x;
+    pass_x.setInputCloud(input);
+    pass_x.setFilterFieldName("x");
+    pass_x.setFilterLimits(-2, 2);
+    PointCloudPtr x_filtered(new PointCloud());
+    pass_x.filter(*x_filtered);
+    pcl::PassThrough<Point> pass_y;;
+    pass_y.setInputCloud(x_filtered);
+    pass_y.setFilterFieldName("y");
+    pass_y.setFilterLimitsNegative(true);
+    pass_y.setFilterLimits(-0.5,0.5);
+    PointCloudPtr xy_filtered_inner(new PointCloud());
+    pass_y.filter(*xy_filtered_inner);
+    pcl::PassThrough<Point> pass_y_outer;
+    pass_y_outer.setInputCloud(xy_filtered_inner);
+    pass_y_outer.setFilterFieldName("y");
+    pass_y_outer.setFilterLimits(-3,3);
+    PointCloudPtr xy_filtered(new PointCloud());
+    pass_y_outer.filter(*xy_filtered);
+    pcl::PassThrough<Point> pass_z;
+    pass_z.setInputCloud(xy_filtered);
+    pass_z.setFilterFieldName("z");
+    pass_z.setFilterLimits(0.1, 1);
+    PointCloudPtr xyz_filtered(new PointCloud());
+    pass_z.filter(*xyz_filtered);
+    return xyz_filtered;
   }
 
 protected:
@@ -291,30 +362,34 @@ public:
     float current_cost;
     while (true) {
       try {
-        current_cost = get_current_cost();
+        current_cost = get_current_cost(NULL);
         break;
       } catch (InsufficientDataException &e) {
         printf("Insufficient data, please move the robot\n");
       }
     }
     uint iterations = 0;
+    float last_yaw = config_->get_float(config_path_.c_str());
+    min_cost_ = current_cost;
+    min_cost_yaw_ = last_yaw;
     while (abs(step_) > 0.0005 && iterations++ < max_iterations_) {
-      float last_yaw = config_->get_float(config_path_.c_str());
-      float next_yaw = get_new_yaw(current_cost, last_yaw);
-      printf("Updating yaw from %f to %f (step %f), last cost %f\n",
-          last_yaw, next_yaw, step_, current_cost);
-      config_->set_float(config_path_.c_str(), next_yaw);
-      usleep(sleep_time_);
+      float next_yaw;
       try {
-        current_cost = get_current_cost();
+        current_cost = get_current_cost(&step_);
+        next_yaw = last_yaw + step_;
         if (current_cost < min_cost_) {
           min_cost_ = current_cost;
-          min_cost_yaw_ = next_yaw;
+          min_cost_yaw_ = last_yaw;
         }
       } catch (InsufficientDataException &e) {
         printf("Insufficient data, skipping loop.\n");
         continue;
       }
+      printf("Updating yaw from %f to %f (step %f), last cost %f\n",
+          last_yaw, next_yaw, step_, current_cost);
+      config_->set_float(config_path_.c_str(), next_yaw);
+      last_yaw = next_yaw;
+      usleep(sleep_time_);
     }
     if (current_cost > min_cost_) {
       printf("Setting yaw to %f with minimal cost %f\n",
@@ -324,7 +399,7 @@ public:
     printf("Yaw calibration finished.\n");
   }
 protected:
-  float get_current_cost() {
+  float get_current_cost(float *new_yaw) {
     front_laser_->read();
     laser_->read();
     PointCloudPtr front_cloud = laser_to_pointcloud(*front_laser_);
@@ -333,48 +408,7 @@ protected:
     transform_pointcloud("base_link", back_cloud);
     front_cloud = filter_center_cloud(front_cloud);
     back_cloud = filter_center_cloud(back_cloud);
-    hungarian_problem_t hp;
-    hp.num_rows = front_cloud->points.size();
-    hp.num_cols = back_cloud->points.size();
-    if ((uint) hp.num_rows < min_points || (uint) hp.num_cols < min_points) {
-      stringstream error;
-      error << "Not enough points, got " << hp.num_rows << " in the front, "
-          << hp.num_cols << " in the back, need " << min_points;
-      throw InsufficientDataException(error.str().c_str());
-    }
-    hp.cost = (int**) calloc(hp.num_rows, sizeof(int*));
-    for (int row = 0; row < hp.num_rows; row++) {
-      hp.cost[row] = (int*) calloc(hp.num_cols, sizeof(int));
-      for (int col = 0; col < hp.num_cols; col++) {
-        int cost =
-            (int) 100000 * pcl::geometry::distance<Point>(
-                front_cloud->points[row],
-                back_cloud->points[col]);
-        hp.cost[row][col] = cost;
-      }
-    }
-    HungarianMethod solver;
-    solver.init(hp.cost, hp.num_rows, hp.num_cols,
-        HUNGARIAN_MODE_MINIMIZE_COST);
-    solver.solve();
-    float total_cost = 0.;
-    int assignment_size;
-    int *assignment = solver.get_assignment(assignment_size);
-    for (int row = 0; row < assignment_size; row++) {
-      if (row >= hp.num_rows) {
-        continue;
-      }
-      if (assignment[row] >= hp.num_cols) {
-        continue;
-      }
-      total_cost += hp.cost[row][assignment[row]];
-    }
-    for (int row = 0; row < hp.num_rows; row++) {
-      free(hp.cost[row]);
-    }
-    free(hp.cost);
-    float mean_cost = total_cost / (hp.num_rows * hp.num_cols);
-    return mean_cost;
+    return get_matching_cost(front_cloud, back_cloud, new_yaw);
   }
   float get_new_yaw(float current_cost, float last_yaw) {
     static float last_cost = current_cost;
@@ -404,18 +438,115 @@ protected:
     last_cost = current_cost;
     return next_yaw;
   }
-  PointCloudPtr filter_center_cloud(PointCloudPtr input) {
+
+protected:
+  LaserInterface *front_laser_;
+  const float init_step_ = 0.02;
+  float step_;
+  mt19937 random_generator_;
+  uniform_real_distribution<float> random_float_dist;
+  map<float, float> costs_;
+  float min_cost_;
+  float min_cost_yaw_;
+};
+
+class TimeOffsetCalibration : public LaserCalibration
+{
+public:
+  TimeOffsetCalibration(LaserInterface *laser, MotorInterface *motor,
+      tf::Transformer *tf_transformer,
+      NetworkConfiguration *config, string config_path)
+  : LaserCalibration(laser, tf_transformer, config, config_path),
+    motor_(motor),
+    step_(numeric_limits<float>::max())
+  {}
+
+  virtual void calibrate() {
+    float current_offset = config_->get_float(config_path_.c_str());
+    map<float, float> costs;
+    float min_cost = numeric_limits<float>::max();
+    float min_offset = 0.;
+    mt19937 random_gen;
+    uniform_real_distribution<float> random_float_dist(0, 1);
+    do {
+      printf("Rotating bot with omega %f\n", omega_);
+      for (uint i = 0; i < rotation_time_ * frequency_; i++) {
+        MotorInterface::TransRotMessage *rot_message =
+            new MotorInterface::TransRotMessage(0.f, 0.f, omega_);
+        motor_->msgq_enqueue(rot_message);
+        usleep(1e6/frequency_);
+        motor_->read();
+        if (motor_->omega() < 0.8 * omega_) {
+          i = 0;
+        }
+      }
+      printf("Taking snapshot (moving)\n");
+      PointCloudPtr moving_cloud = get_lasercloud(laser_);
+      MotorInterface::TransRotMessage *stop_message =
+          new MotorInterface::TransRotMessage(0.f, 0.f, 0.f);
+      printf("Stopping bot.\n");
+      motor_->msgq_enqueue(stop_message);
+      while (motor_->omega() > 0.02) {
+        motor_->read();
+      }
+      usleep(50000);
+      printf("Taking snapshot (resting)\n");
+      PointCloudPtr rest_cloud;
+      try {
+        rest_cloud = get_lasercloud(laser_);
+      } catch (Exception &e) {
+        printf("Cloud not get pointcloud: %s\n", e.what_no_backtrace());
+        continue;
+      }
+      float yaw;
+      float current_cost;
+      try {
+        current_cost = get_matching_cost(rest_cloud, moving_cloud, &yaw);
+      } catch (InsufficientDataException &e) {
+        printf("Insufficient data: %s.\nPlease move the robot.\n",
+            e.what_no_backtrace());
+        continue;
+      }
+      float next_offset;
+      float jump_probability =
+          static_cast<float>((current_cost - min_cost)) / current_cost;
+      float rand_01 = random_float_dist(random_gen);
+      if (current_cost > min_cost && rand_01 > 1 - jump_probability) {
+        printf("Setting back to minimum: %f -> %f (probability %f)\n",
+            current_offset, min_offset, jump_probability);
+        next_offset = min_offset;
+        step_ = next_offset - current_offset;
+      }  else {
+        min_cost = current_cost;
+        min_offset = current_offset;
+        step_ = -0.05 * yaw / omega_;
+        next_offset = current_offset + step_;
+      }
+      printf("Updating time offset from %f to %f (step %f), current cost %f\n",
+          current_offset, next_offset, step_, current_cost);
+      config_->set_float(config_path_.c_str(), next_offset);
+      current_offset = next_offset;
+      usleep(sleep_time_);
+    } while (abs(step_) > 0.0005);
+    printf("Setting to offset with minimal cost %f\n", min_offset);
+    config_->set_float(config_path_.c_str(), min_offset);
+  }
+protected:
+  PointCloudPtr get_lasercloud(LaserInterface *laser) {
+    laser->read();
+    PointCloudPtr laser_cloud = laser_to_pointcloud(*laser);
+    transform_pointcloud("odom", laser_cloud);
     pcl::PassThrough<Point> pass_x;
-    pass_x.setInputCloud(input);
+    pass_x.setInputCloud(laser_cloud);
     pass_x.setFilterFieldName("x");
-    pass_x.setFilterLimits(-2, 2);
+    pass_x.setFilterLimits(-3., 3.);
     PointCloudPtr x_filtered(new PointCloud());
     pass_x.filter(*x_filtered);
     pcl::PassThrough<Point> pass_y;;
     pass_y.setInputCloud(x_filtered);
     pass_y.setFilterFieldName("y");
     pass_y.setFilterLimitsNegative(true);
-    pass_y.setFilterLimits(-0.5,0.5);
+    pass_y.setFilterLimits(-0.3, 0.3);
     PointCloudPtr xy_filtered_inner(new PointCloud());
     pass_y.filter(*xy_filtered_inner);
     pcl::PassThrough<Point> pass_y_outer;
@@ -432,21 +563,19 @@ protected:
     pass_z.filter(*xyz_filtered);
     return xyz_filtered;
   }
-
 protected:
-  LaserInterface *front_laser_;
-  const float init_step_ = 0.02;
+  const static long sleep_time_ = 2000000;
+  MotorInterface *motor_;
+  constexpr static float omega_ = 2.0;
+  const static unsigned int frequency_ = 100;
+  constexpr static float rotation_time_ = 1.;
   float step_;
-  mt19937 random_generator_;
-  uniform_real_distribution<float> random_float_dist;
-  map<float, float> costs_;
-  float min_cost_;
-  float min_cost_yaw_;
 };
+
 int
 main(int argc, char **argv)
 {
-  ArgumentParser arg_parser(argc, argv, "h");
+  ArgumentParser arg_parser(argc, argv, "hr:f:b:RPYT");
   if (arg_parser.has_arg("h")) {
     print_usage(argv[0]);
     return 0;
@@ -460,10 +589,36 @@ main(int argc, char **argv)
   tf::TransformListener *tf_listener __attribute__((unused)) = NULL;
 
 
-  // TODO: make these configurable
-  const string host = "robotino-base-3";
-//  const string host = "localhost";
-  const unsigned short int port = FAWKES_TCP_PORT;
+  string host = "localhost";
+  unsigned short int port = FAWKES_TCP_PORT;
+  if (arg_parser.has_arg("r")) {
+    arg_parser.parse_hostport("r", host, port);
+  }
+  string front_laser_interface_id = "Laser front 360";
+  if (arg_parser.has_arg("f")) {
+    front_laser_interface_id = string(arg_parser.arg("f"));
+  }
+  string back_laser_interface_id = "Laser back 360";
+  if (arg_parser.has_arg("b")) {
+    back_laser_interface_id = string(arg_parser.arg("b"));
+  }
+  bool calibrate_roll = true;
+  if (arg_parser.has_arg("R")) {
+    calibrate_roll = false;
+  }
+  bool calibrate_pitch = true;
+  if (arg_parser.has_arg("P")) {
+    calibrate_pitch = false;
+  }
+  bool calibrate_yaw = true;
+  if (arg_parser.has_arg("Y")) {
+    calibrate_yaw = false;
+  }
+  bool calibrate_time_offset = true;
+  if (arg_parser.has_arg("T")) {
+    calibrate_time_offset = false;
+  }
+
   try {
     client = new FawkesNetworkClient(host.c_str(), port);
     client->connect();
@@ -477,41 +632,55 @@ main(int argc, char **argv)
     return -1;
   }
 
-  // TODO: make laser interface configurable
-  const string interface_id = "Laser back 360";
   LaserInterface *laser = NULL;
   try {
     laser = blackboard->open_for_reading<LaserInterface>(
-        interface_id.c_str());
+        back_laser_interface_id.c_str());
   } catch (Exception &e) {
-    printf("Failed to open Blackboard interface %s\n", interface_id.c_str());
+    printf("Failed to open Blackboard interface '%s'\n",
+        back_laser_interface_id.c_str());
     e.print_trace();
     return -1;
   }
   if (!laser->has_writer()) {
-    printf("Laser %s does not have a writer!\n", interface_id.c_str());
+    printf("Laser '%s' does not have a writer!\n",
+        back_laser_interface_id.c_str());
     return -1;
   }
-  // TODO: make laser interface configurable
-  const string front_interface_id = "Laser front 360";
   LaserInterface *front_laser = NULL;
   try {
     front_laser = blackboard->open_for_reading<LaserInterface>(
-        front_interface_id.c_str());
+        front_laser_interface_id.c_str());
   } catch (Exception &e) {
-    printf("Failed to open Blackboard interface %s\n", interface_id.c_str());
+    printf("Failed to open Blackboard interface '%s'\n",
+        front_laser_interface_id.c_str());
     e.print_trace();
     return -1;
   }
   if (!front_laser->has_writer()) {
-    printf("Laser %s does not have a writer!\n", interface_id.c_str());
+    printf("Laser '%s' does not have a writer!\n",
+        front_laser_interface_id.c_str());
+    return -1;
+  }
+  MotorInterface *motor = NULL;
+  string motor_interface_id = "Robotino";
+  try {
+    motor = blackboard->open_for_reading<MotorInterface>(
+        motor_interface_id.c_str());
+  } catch (Exception &e) {
+    printf("Failed to open Blackboard interface '%s'\n",
+        motor_interface_id.c_str());
+    e.print_trace();
+    return -1;
+  }
+  if (!motor->has_writer()) {
+    printf("motor '%s' does not have a writer!\n", motor_interface_id.c_str());
     return -1;
   }
 
   const string cfg_transforms_prefix =
       "/plugins/static-transforms/transforms/back_laser/";
 
-  // TODO: create calibration objects here and calibrate
   RollCalibration roll_calibration(
       laser, transformer, netconf, cfg_transforms_prefix + "rot_roll");
   PitchCalibration pitch_calibration(
@@ -519,16 +688,46 @@ main(int argc, char **argv)
   YawCalibration yaw_calibration(
       laser, front_laser, transformer, netconf,
       cfg_transforms_prefix + "rot_yaw");
-  cout << "Please put the robot in a position such that you only have ground "
-       << "behind the robot." << endl
-       << "To start pitch and roll calibration, press enter" << endl;
-  cin.get();
-  pitch_calibration.calibrate();
-  roll_calibration.calibrate();
-  cout << "Please move the robot such that it can see a wall." << endl
-       << "To start yaw calibration, press enter." << endl;
-  cin.get();
-  yaw_calibration.calibrate();
+  // TODO: make config path a commandline argument
+  TimeOffsetCalibration time_offset_front_calibration(
+      front_laser, motor, transformer, netconf, "/hardware/laser/front/time_offset");
+  TimeOffsetCalibration time_offset_back_calibration(
+      laser, motor, transformer, netconf, "/hardware/laser/back/time_offset");
+  if (calibrate_pitch || calibrate_roll) {
+    cout << "Please put the robot in a position such that you only have ground "
+         << "behind the robot." << endl;
+  }
+  if (calibrate_pitch) {
+    cout << "To start pitch calibration, press enter" << endl;
+    cin.get();
+    pitch_calibration.calibrate();
+    printf("--------------------\n");
+  }
+  if (calibrate_roll) {
+    cout << "To start roll calibration, press enter" << endl;
+    cin.get();
+    roll_calibration.calibrate();
+    printf("--------------------\n");
+}
+  if (calibrate_yaw) {
+    cout << "Please move the robot such that it can see a wall." << endl
+         << "To start yaw calibration, press enter." << endl;
+    cin.get();
+    yaw_calibration.calibrate();
+    printf("--------------------\n");
+}
+  if (calibrate_time_offset) {
+    cout << "Move the robot into a corner and make sure that it can rotate "
+         << "without hitting any obstacles." << endl
+         << "Careful: The robot will start rotating in the next step." << endl
+         << "Press Enter to start time offset calibration." << endl;
+    cin.get();
+    printf("Starting time offset calibration for front laser.\n");
+    time_offset_front_calibration.calibrate();
+    printf("--------------------\n");
+    printf("Starting time offset calibration for back laser.\n");
+    time_offset_back_calibration.calibrate();
+  }
 
   return 0;
 }
