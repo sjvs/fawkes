@@ -26,11 +26,11 @@ OBJS_all = $(OBJS_asp)
 #TODO: export this in .mk and really check
 HAVE_CLINGO = 1
 CFLAGS_CLINGO = -DWITH_THREADS=1 \
-	-I $(HOME)/clingo/libclasp \
-	-I $(HOME)/clingo/libclingo \
-	-I $(HOME)/clingo/libgringo \
-	-I $(HOME)/clingo/liblp \
-	-I $(HOME)/clingo/libprogram_opts
+	-I /opt/clingo/libclasp \
+	-I /opt/clingo/libclingo \
+	-I /opt/clingo/libgringo \
+	-I /opt/clingo/liblp \
+	-I /opt/clingo/libprogram_opts
 LDFLAGS_CLINGO = -L/opt/clingo/build/bin/ -Wl,-rpath=/opt/clingo/build/bin/ -lclingo
 
 # Extra files for system-wide install, i.e., "make install"
