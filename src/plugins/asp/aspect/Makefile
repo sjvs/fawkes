@@ -32,7 +32,7 @@ CFLAGS_CLINGO = -DWITH_THREADS=1 \
 	-I $(HOME)/clingo/libgringo \
 	-I $(HOME)/clingo/liblp \
 	-I $(HOME)/clingo/libprogram_opts
-LDFLAGS_CLINGO = -L$(HOME)/clingo-build/bin -Wl,-rpath=$(HOME)/clingo-build/bin -lclingo
+LDFLAGS_CLINGO = -L/opt/clingo/build/bin -Wl,-rpath=/opt/clingo/build/bin -lclingo
 
 ifeq ($(HAVE_CPP11),1)
   ifeq ($(HAVE_CLINGO),1)
