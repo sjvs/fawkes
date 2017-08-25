@@ -30,10 +30,6 @@
 
 typedef std::unique_ptr<mongo::DBClientCursor> QResCursor;
 
-/** @class RobotMemorySetup  robot_memory_setup.h
- *
- * @author Frederik Zwilling
- */
 class RobotMemorySetup
 {
   public:
@@ -48,7 +44,8 @@ class RobotMemorySetup
     fawkes::Logger *logger;
 
     bool is_mongo_running(unsigned int port);
-    void wait_until_started(unsigned int port, std::string cmd, int timout = 15000000);
+    void wait_until_started(const std::string &hostport, std::string cmd,
+                            int timout = 15000000, int wait_step=100000);
     void prepare_mongo_db_path(std::string path);
     fawkes::SubProcess* start_mongo_process(std::string proc_name, unsigned int port, const char *argv[]);
     mongo::BSONObj run_mongo_command(unsigned int port, std::string command, std::string err_msg_to_ignore="");
