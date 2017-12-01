@@ -85,6 +85,7 @@ DynamixelDriverThread::init()
   cfg_min_voltage_                      = config->get_float((cfg_prefix_ + "min_voltage").c_str());
   cfg_max_voltage_                      = config->get_float((cfg_prefix_ + "max_voltage").c_str());
   cfg_servos_to_discover_               = config->get_uints((cfg_prefix_ + "servos").c_str());
+  cfg_enable_verbose_output_            = config->get_bool((cfg_prefix_ + "enable_verbose_output").c_str());
 
   chain_ = new DynamixelChain(cfg_device_.c_str(), cfg_read_timeout_ms_, cfg_enable_echo_fix_, cfg_enable_connection_stability_, cfg_min_voltage_, cfg_max_voltage_);
   DynamixelChain::DeviceList devl = chain_->discover(cfg_disc_timeout_ms_, cfg_servos_to_discover_);
@@ -244,6 +245,7 @@ DynamixelDriverThread::finalize()
 void
 DynamixelDriverThread::exec_sensor()
 {
+  logger->log_debug(name(), "start exec_sensor");
   if (has_fresh_data()) {
     for (auto &sp : servos_) {
       unsigned int servo_id = sp.first;
@@ -260,7 +262,9 @@ DynamixelDriverThread::exec_sensor()
 	angle = s.last_angle;
       }
 
+      logger->log_debug(name(), "try chain_r_lock at line %d", __LINE__);
       ScopedRWLock lock(chain_rwlock_, ScopedRWLock::LOCK_READ);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
 
       s.servo_if->set_timestamp(&s.time);
       s.servo_if->set_position(chain_->get_position(servo_id));
@@ -278,9 +282,9 @@ DynamixelDriverThread::exec_sensor()
       s.servo_if->set_velocity(get_velocity(servo_id));
       s.servo_if->set_alarm_shutdown(chain_->get_alarm_shutdown(servo_id));
       
-      if ((chain_->get_load(servo_id) & 0x3ff) > (cfg_prevent_alarm_shutdown_threshold_ * chain_->get_torque_limit(servo_id))) {
+      if (s.servo_if->is_enable_prevent_alarm_shutdown()) {
+        if ((chain_->get_load(servo_id) & 0x3ff) > (cfg_prevent_alarm_shutdown_threshold_ * chain_->get_torque_limit(servo_id))) {
         logger->log_warn(name(), "Servo with ID: %d is in overload condition: torque_limit: %d, load: %d", servo_id, chain_->get_torque_limit(servo_id), chain_->get_load(servo_id) & 0x3ff);
-        if (s.servo_if->is_enable_prevent_alarm_shutdown()) {
           // is the current load cw or ccw?
           if (chain_->get_load(servo_id) & 0x400) {
             goto_angle(servo_id, get_angle(servo_id) + 0.001);
@@ -308,6 +312,7 @@ DynamixelDriverThread::exec_sensor()
       s.joint_if->write();
     }
   }
+  logger->log_debug(name(), "end exec_sensor");
 }
 
 
@@ -315,6 +320,7 @@ DynamixelDriverThread::exec_sensor()
 void
 DynamixelDriverThread::exec_act()
 {
+  logger->log_debug(name(), "start exec_act");
   for (auto &sp : servos_) {
     unsigned int servo_id = sp.first;
     Servo &s = sp.second;
@@ -412,6 +418,7 @@ DynamixelDriverThread::exec_act()
     }
     if (write_led_if) s.led_if->write();
   }
+  logger->log_debug(name(), "end exec_act");
 }
 
 
@@ -430,11 +437,15 @@ DynamixelDriverThread::bb_interface_message_received(Interface *interface,
       return false; // do not enqueue StopMessage
     } else if (message->is_of_type<DynamixelServoInterface::FlushMessage>()) {
       stop_motion(si->first);
-      logger->log_info(name(), "Flushing message queue");
+      if (cfg_enable_verbose_output_) {
+        logger->log_info(name(), "Flushing message queue");
+      }
       si->second.servo_if->msgq_flush();
       return false;
     } else {
-      logger->log_info(name(), "Received message of type %s, enqueueing", message->type());
+      if (cfg_enable_verbose_output_) {
+        logger->log_info(name(), "Received message of type %s, enqueueing", message->type());
+      }
       return true;
     }
   }
@@ -680,7 +691,9 @@ DynamixelDriverThread::get_angle(unsigned int servo_id)
     return 0.;
   }
 
+  logger->log_debug(name(), "try chain_r_lock at line %d", __LINE__);
   ScopedRWLock lock(chain_rwlock_, ScopedRWLock::LOCK_READ);
+  logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
 
   int ticks  = ((int)chain_->get_position(servo_id)  - (int)DynamixelChain::CENTER_POSITION);
 
@@ -722,7 +735,9 @@ DynamixelDriverThread::is_final(unsigned int servo_id)
 
   float angle = get_angle(servo_id);
 
+  logger->log_debug(name(), "try chain_r_lock at line %d", __LINE__);
   ScopedRWLock lock(chain_rwlock_, ScopedRWLock::LOCK_READ);
+  logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
 
   return  ( (fabs(angle  - s.target_angle)  <= s.angle_margin) ||
 	    (! chain_->is_moving(servo_id)));
@@ -764,7 +779,9 @@ DynamixelDriverThread::loop()
       s.value_rwlock->lock_for_write();
       s.enable  = false;
       s.value_rwlock->unlock();
+      logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
       ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
       chain_->set_led_enabled(servo_id, true);
       chain_->set_torque_enabled(servo_id, true);
       if (s.led_enable || s.led_disable || s.velo_pending || s.move_pending || s.mode_set_pending || s.recover_pending) usleep(3000);
@@ -772,7 +789,9 @@ DynamixelDriverThread::loop()
       s.value_rwlock->lock_for_write();
       s.disable = false;
       s.value_rwlock->unlock();
+      logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
       ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
       chain_->set_torque_enabled(servo_id, false);
       if (s.led_enable || s.led_disable || s.velo_pending || s.move_pending || s.mode_set_pending || s.recover_pending) usleep(3000);
     }
@@ -781,15 +800,19 @@ DynamixelDriverThread::loop()
       s.value_rwlock->lock_for_write();
       s.led_enable = false;
       s.value_rwlock->unlock();    
+      logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
       ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
       chain_->set_led_enabled(servo_id, true);
       if (s.velo_pending || s.move_pending || s.mode_set_pending || s.recover_pending) usleep(3000);
     } else if (s.led_disable) {
       s.value_rwlock->lock_for_write();
       s.led_disable = false;
       s.value_rwlock->unlock();    
+      logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
       ScopedRWLock lock(chain_rwlock_);
-      chain_->set_led_enabled(servo_id, false);    
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
+      chain_->set_led_enabled(servo_id, false);
       if (s.velo_pending || s.move_pending || s.mode_set_pending || s.recover_pending) usleep(3000);
     }
 
@@ -798,7 +821,9 @@ DynamixelDriverThread::loop()
       s.velo_pending = false;
       unsigned int vel  = s.vel;
       s.value_rwlock->unlock();
+      logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
       ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
       chain_->set_goal_speed(servo_id, vel);
       if (s.move_pending || s.mode_set_pending || s.recover_pending) usleep(3000);
     }
@@ -828,7 +853,9 @@ DynamixelDriverThread::loop()
     }
 
     try {
+      logger->log_debug(name(), "try chain_r_lock at line %d", __LINE__);
       ScopedRWLock lock(chain_rwlock_, ScopedRWLock::LOCK_READ);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
       chain_->read_table_values(servo_id);
 
       MutexLocker lock_fresh_data(fresh_data_mutex_);
@@ -866,7 +893,9 @@ DynamixelDriverThread::exec_goto_angle(unsigned int servo_id, float angle_rad)
     return;
   }
 
+  logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
   ScopedRWLock lock(chain_rwlock_);
+  logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
   chain_->goto_position(servo_id, pos);
 }
 
@@ -878,11 +907,15 @@ void
 DynamixelDriverThread::exec_set_mode(unsigned int servo_id, unsigned int new_mode)
 {
   if (new_mode == DynamixelServoInterface::JOINT) {
-    ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
+      ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
     chain_->set_angle_limits(servo_id, 0, 1023);
   }
   else if (new_mode == DynamixelServoInterface::WHEEL) {
-    ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "try chain_w_lock at line %d", __LINE__);
+      ScopedRWLock lock(chain_rwlock_);
+      logger->log_debug(name(), "lock succeed     at line %d", __LINE__);
     chain_->set_angle_limits(servo_id, 0, 0);
   }
   else {
