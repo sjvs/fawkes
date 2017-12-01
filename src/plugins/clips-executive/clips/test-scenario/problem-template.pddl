@@ -25,6 +25,11 @@
     hello goodbye meh - text
     bob peggy - name
   )
-  (:init (said bob hello))
-  (:goal (said peggy goodbye))
+  (:init
+    <<#DOMAINFACTS|{relation:'domain-fact'}>>(<<name>> <<param_values>>)
+    <</DOMAINFACTS>>
+  )
+  (:goal
+    <<GOAL>>
+  )
 )
