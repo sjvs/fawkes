@@ -55,6 +55,7 @@ clips-executive:
   specs:
     test:
       domain: test-scenario/test-domain.clp
+      worldmodel: test-scenario/worldmodel-facts.clp
       goal-reasoner: test-scenario/goal-reasoner.clp
       goal-expander: test-scenario/goal-expander-pddl.clp
       action-selection: test-scenario/action-selection.clp
@@ -66,7 +67,9 @@ clips-executive:
       action-mapping:
         say: say{text=?(text)s, wait=true}
         say-hello: say{text="Hello ?(name)y", wait=true}
+        say-hello-again: say{text="Hello again ?(name)y", wait=true}
         say-goodbye: say{text="Good bye", wait=true}
+        say-cleanup: say{text="Cleaning up", wait=true}
 
       # Interface _types_ mentioned in the following list will be pre-loaded,
       # i.e., the fact templates will be created in stage2, before user-specified

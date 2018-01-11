@@ -22,7 +22,6 @@
 (deftemplate domain-predicate
 	"Representation of a predicate specification."
   (slot name (type SYMBOL) (default ?NONE))
-	(slot wm-key-pattern (type STRING))
   (multislot param-names (type SYMBOL))
   (multislot param-types (type SYMBOL))
 )
@@ -32,6 +31,25 @@
    If a fact exists, it is considered to be true, false otherwise (closed world assumption)."
   (slot name (type SYMBOL) (default ?NONE))
   (multislot param-values)
+)
+
+(deffunction domain-wipe ()
+	(foreach ?t (create$ domain-object-type domain-object domain-predicate domain-fact
+											 domain-precondition domain-atomic-precondition
+											 domain-operator domain-operator-parameter
+											 domain-effect domain-retracted-fact domain-error)
+		(delayed-do-for-all-facts ((?d ?t)) TRUE (retract ?d))
+	)
+)
+
+(deffunction domain-fact-key (?param-names ?param-values)
+	(if (<> (length$ ?param-names) (length$ ?param-values)) then
+		(printout error "Cannot generate domain fact key with non-equal length names and values" crlf)
+		(return FALSE)
+	)
+	(bind ?rv (create$))
+	(foreach ?n ?param-names (bind ?rv (append$ ?rv ?n (nth$ ?n-index ?param-values))))
+	(return ?rv)
 )
 
 (deftemplate domain-retracted-fact

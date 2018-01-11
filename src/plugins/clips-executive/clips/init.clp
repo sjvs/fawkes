@@ -121,10 +121,15 @@
 	(executive-init)
 	(ff-feature-loaded blackboard)
 	=>
+
+	; Here we load basic, non-flow components which deal with
+	; representation and templates
+	(path-load "plan.clp")
+	(path-load "domain.clp")
+	(path-load "worldmodel.clp")
+	(path-load "wm-domain-sync.clp")
 	(path-load "blackboard-init.clp")
 	(path-load "skills-init.clp")
-	(path-load "plan.clp")
-  (path-load "domain.clp")
 )
 
 (defrule executive-init-load-robot-memory-sync
@@ -154,7 +159,8 @@
 	; Common spec config prefix
 	(bind ?pf (str-cat "/clips-executive/specs/" ?spec "/"))
 
-	(foreach ?component (create$ "domain" "state-estimation" "goal-reasoner" "goal-expander"
+	(foreach ?component (create$ "domain" "worldmodel" "state-estimation"
+                               "goal-reasoner" "goal-expander"
                                "macro-expansion" "action-selection"
                                "action-execution" "execution-monitoring")
 		(do-for-fact ((?c confval)) (and (eq ?c:path (str-cat ?pf ?component)) (eq ?c:type STRING))
