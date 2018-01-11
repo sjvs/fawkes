@@ -22,6 +22,9 @@
 (deftemplate domain-predicate
 	"Representation of a predicate specification."
   (slot name (type SYMBOL) (default ?NONE))
+  ; If the predicate is sensed, it is not directly changed by an action effect.
+  ; Instead, we expect the predicate to be changed externally.
+  (slot sensed (type SYMBOL) (allowed-values TRUE FALSE) (default FALSE))
   (multislot param-names (type SYMBOL))
   (multislot param-types (type SYMBOL))
 )
@@ -58,6 +61,15 @@
   (multislot param-values)
 )
 
+(deftemplate domain-pending-sensed-fact
+  "An action effect of a sensed predicate that is still pending."
+  (slot name (type SYMBOL) (default ?NONE))
+  (slot action-id (type INTEGER))
+  (slot type (type SYMBOL) (allowed-values POSITIVE NEGATIVE)
+    (default POSITIVE))
+  (multislot param-values)
+)
+
 
 (deftemplate domain-operator
   "An operator of the domain. This only defines the name of the operator, all
@@ -76,15 +88,16 @@
 )
 
 (deftemplate domain-precondition
-  "A (non-atomic) precondition of an operator. Must be either part-of an
-   operator or another precondition. Use the name to assign other preconditions
-   as part of this precondition. This can currently be a conjunction or a
-   negation. If it is a negation, it can have only one sub-condition. If it is
-   a conjunction, it can have an arbitrary number of sub-conditions. The action
-   is an optional ID of grounded action this precondition belongs to. Note that
-   grounded should always be yes if the action is not nil."
+  "A (non-atomic) precondition of an operator or a conditional effect.
+   Must be either part-of an operator or another precondition. Use the name to
+   assign other preconditions as part of this precondition. This can currently
+   be a conjunction or a negation. If it is a negation, it can have only one
+   sub-condition. If it is a conjunction, it can have an arbitrary number of
+   sub-conditions. The action is an optional ID of grounded action this
+   precondition belongs to. Note that grounded should always be yes if the
+   action is not nil."
   (slot part-of (type SYMBOL))
-  (slot action (type INTEGER) (default 0))
+  (slot grounded-with (type INTEGER) (default 0))
   (slot name (type SYMBOL) (default-dynamic (gensym*)))
   (slot type (type SYMBOL) (allowed-values conjunction negation))
   (slot grounded (type SYMBOL) (allowed-values TRUE FALSE) (default FALSE))
@@ -101,7 +114,7 @@
    See the tests for an example.
 "
   (slot part-of (type SYMBOL))
-  (slot action (type INTEGER) (default 0))
+  (slot grounded-with (type INTEGER) (default 0))
   (slot name (type SYMBOL) (default-dynamic (gensym*)))
   (slot predicate (type SYMBOL))
   (multislot param-names (type SYMBOL))
@@ -114,6 +127,7 @@
 (deftemplate domain-effect
   "An effect of an operator. For now, effects are just a set of atomic effects
    which are applied after the action was executed successfully."
+  (slot name (type SYMBOL) (default-dynamic (gensym*)))
   (slot part-of (type SYMBOL))
   (slot predicate (type SYMBOL))
   (multislot param-names (default (create$)))
@@ -166,7 +180,7 @@
   (modify ?a (param-names ?param-names))
 )
 
-(defrule domain-ground-precondition
+(defrule domain-ground-action-precondition
   "Ground a non-atomic precondition. Grounding here merely means that we
    duplicate the precondition and tie it to one specific action-id."
   (not (domain-wm-update))
@@ -176,9 +190,25 @@
                 (part-of ?op)
                 (grounded FALSE))
   (not (domain-precondition
-        (name ?precond-name) (action ?action-id) (grounded TRUE)))
+        (name ?precond-name) (grounded-with ?action-id) (grounded TRUE)))
 =>
-  (duplicate ?precond (action ?action-id) (grounded TRUE))
+  (duplicate ?precond (grounded-with ?action-id) (grounded TRUE))
+)
+
+(defrule domain-ground-effect-precondition
+  "Ground a non-atomic precondition. Grounding here merely means that we
+   duplicate the precondition and tie it to one specific effect-id."
+  (not (domain-wm-update))
+  (plan-action (action-name ?op) (id ?action-id) (status EXECUTED))
+  (domain-effect (name ?effect-name) (part-of ?op))
+  ?precond <- (domain-precondition
+                (name ?precond-name)
+                (part-of ?effect-name)
+                (grounded FALSE))
+  (not (domain-precondition
+        (name ?precond-name) (grounded-with ?action-id) (grounded TRUE)))
+=>
+  (duplicate ?precond (grounded-with ?action-id) (grounded TRUE))
 )
 
 (defrule domain-ground-nested-precondition
@@ -189,13 +219,13 @@
                 (name ?precond-name)
                 (part-of ?parent)
                 (grounded FALSE))
-  (domain-precondition (name ?parent) (action ?action-id&~0))
+  (domain-precondition (name ?parent) (grounded-with ?action-id&~0))
   (not (domain-precondition
         (name ?precond-name)
-        (action ?action-id)
+        (grounded-with ?action-id)
         (grounded TRUE)))
 =>
-  (duplicate ?precond (action ?action-id) (grounded TRUE))
+  (duplicate ?precond (grounded-with ?action-id) (grounded TRUE))
 )
 
 (defrule domain-ground-atomic-precondition
@@ -206,7 +236,8 @@
     (param-names $?action-param-names)
     (id ?action-id)
     (param-values $?action-values))
-  (domain-precondition (name ?parent) (action ?action-id&~0) (grounded TRUE))
+  (domain-precondition (name ?parent)
+    (grounded-with ?action-id&~0) (grounded TRUE))
   ?precond <- (domain-atomic-precondition
                 (part-of ?parent)
                 (name ?precond-name)
@@ -215,7 +246,7 @@
                 (grounded FALSE)
               )
   (not (domain-atomic-precondition
-        (action ?action-id)
+        (grounded-with ?action-id)
         (name ?precond-name)
         (grounded TRUE)))
 =>
@@ -238,7 +269,7 @@
     )
   )
   (duplicate ?precond
-    (param-values ?values) (action ?action-id) (grounded TRUE))
+    (param-values ?values) (grounded-with ?action-id) (grounded TRUE))
 )
 
 (deffunction intersect
@@ -271,13 +302,18 @@
   ?precond <- (domain-precondition
                 (type negation)
                 (grounded TRUE)
-                (action ?action-id)
+                (grounded-with ?action-id)
                 (name ?pn)
                 (is-satisfied FALSE))
   (or (domain-atomic-precondition
-        (action ?action-id) (part-of ?pn) (grounded TRUE) (is-satisfied FALSE))
+        (grounded-with ?action-id) (part-of ?pn)
+        (grounded TRUE) (is-satisfied FALSE)
+      )
       (domain-precondition
-        (action ?action-id) (part-of ?pn) (grounded TRUE) (is-satisfied FALSE)))
+        (grounded-with ?action-id) (part-of ?pn)
+        (grounded TRUE) (is-satisfied FALSE)
+      )
+  )
 =>
   (modify ?precond (is-satisfied TRUE))
 )
@@ -288,13 +324,18 @@
   ?precond <- (domain-precondition
                 (type negation)
                 (name ?pn)
-                (action ?action-id)
+                (grounded-with ?action-id)
                 (is-satisfied TRUE)
                 (grounded TRUE))
   (or (domain-atomic-precondition
-        (action ?action-id) (part-of ?pn) (grounded TRUE) (is-satisfied TRUE))
+        (grounded-with ?action-id) (part-of ?pn)
+        (grounded TRUE) (is-satisfied TRUE)
+      )
       (domain-precondition
-        (action ?action-id) (part-of ?pn) (grounded TRUE) (is-satisfied TRUE)))
+        (grounded-with ?action-id) (part-of ?pn)
+        (grounded TRUE) (is-satisfied TRUE)
+      )
+  )
 =>
   (modify ?precond (is-satisfied FALSE))
 )
@@ -304,13 +345,15 @@
   ?precond <- (domain-precondition
                 (name ?pn)
                 (type conjunction)
-                (action ?action-id)
+                (grounded-with ?action-id)
                 (grounded TRUE)
                 (is-satisfied FALSE))
   (not (domain-atomic-precondition
-        (part-of ?pn) (grounded TRUE) (action ?action-id) (is-satisfied FALSE)))
+        (part-of ?pn) (grounded TRUE)
+        (grounded-with ?action-id) (is-satisfied FALSE)))
   (not (domain-precondition
-        (part-of ?pn) (grounded TRUE) (action ?action-id) (is-satisfied FALSE)))
+        (part-of ?pn) (grounded TRUE)
+        (grounded-with ?action-id) (is-satisfied FALSE)))
 =>
   (modify ?precond (is-satisfied TRUE))
 )
@@ -321,16 +364,41 @@
   ?precond <- (domain-precondition
                 (name ?pn)
                 (type conjunction)
-                (action ?action-id)
+                (grounded-with ?action-id)
                 (grounded TRUE)
                 (is-satisfied TRUE))
   (or (domain-atomic-precondition
-        (part-of ?pn) (grounded TRUE) (action ?action-id) (is-satisfied FALSE))
+        (part-of ?pn) (grounded TRUE)
+        (grounded-with ?action-id) (is-satisfied FALSE)
+      )
       (domain-precondition
-        (part-of ?pn) (grounded TRUE) (action ?action-id) (is-satisfied FALSE))
+        (part-of ?pn) (grounded TRUE)
+        (grounded-with ?action-id) (is-satisfied FALSE)
+      )
   )
 =>
   (modify ?precond (is-satisfied FALSE))
+)
+
+(deffunction domain-ground-effect
+  "Ground action effect parameters by replacing them with constants and values."
+  (?effect-param-names ?effect-param-constants ?action-param-names ?action-param-values)
+  (bind ?values $?effect-param-names)
+  ; Replace constants with their values
+  (foreach ?p ?values
+    (if (eq ?p c) then
+      (bind ?values
+        (replace$ ?values ?p-index ?p-index
+          (nth$ ?p-index $?effect-param-constants))
+      )
+    )
+  )
+  (foreach ?p $?action-param-names
+    (bind ?values
+      (replace-member$ ?values (nth$ ?p-index $?action-param-values) ?p)
+    )
+  )
+  (return ?values)
 )
 
 (defrule domain-apply-effect
@@ -338,38 +406,43 @@
   (plan-action
     (id ?id)
     (action-name ?op)
-    (status FINAL)
+    (status EXECUTED)
     (param-names $?action-param-names)
     (param-values $?action-param-values)
   )
   (domain-effect
+    (name ?name)
     (part-of ?op)
     (param-names $?effect-param-names)
     (param-constants $?effect-param-constants)
     (type ?effect-type)
-    (predicate ?predicate))
-=>
-  (bind ?values ?effect-param-names)
-  ; Replace constants with their values
-  (foreach ?p ?values
-    (if (eq ?p c) then
-      (bind ?values
-        (replace$ ?values ?p-index ?p-index
-          (nth$ ?p-index ?effect-param-constants))
+    (predicate ?predicate)
+  )
+  (domain-predicate (name ?predicate) (sensed ?sensed-predicate))
+  (or (not (domain-precondition (part-of ?name)))
+      (domain-precondition (part-of ?name)
+        (is-satisfied TRUE) (grounded TRUE) (grounded-with ?id)
       )
-    )
   )
-  (foreach ?p ?action-param-names
-    (bind ?values
-      (replace-member$ ?values (nth$ ?p-index ?action-param-values) ?p)
-    )
+=>
+  (bind ?values (domain-ground-effect
+                  ?effect-param-names
+                  ?effect-param-constants
+                  ?action-param-names
+                  ?action-param-values
+                )
   )
-  (if (eq ?effect-type POSITIVE) then
-    (assert (domain-fact (name ?predicate) (param-values ?values)))
+  (if ?sensed-predicate then
+    (assert (domain-pending-sensed-fact (name ?predicate) (action-id ?id)
+              (param-values ?values) (type ?effect-type)
+    ))
   else
-    (assert (domain-retracted-fact (name ?predicate) (param-values ?values)))
+    (if (eq ?effect-type POSITIVE) then
+      (assert (domain-fact (name ?predicate) (param-values ?values)))
+    else
+      (assert (domain-retracted-fact (name ?predicate) (param-values ?values)))
+    )
   )
-  (assert (domain-wm-update))
 )
 
 (defrule domain-retract-negative-effect
@@ -388,10 +461,37 @@
   (retract ?r)
 )
 
+(defrule domain-check-positive-pending-sensed-fact
+  "Remove any pending sensed positive facts that have been sensed."
+  ?ef <- (domain-pending-sensed-fact (type POSITIVE)
+          (name ?predicate) (param-values $?values))
+  ?df <- (domain-fact (name ?predicate) (param-values $?values))
+=>
+  (retract ?ef)
+)
+
+(defrule domain-check-negative-pending-sensed-fact
+  "Remove any pending sensed negative facts that have been sensed."
+  ?ef <- (domain-pending-sensed-fact (type NEGATIVE)
+          (name ?predicate) (param-values $?values))
+  (not (domain-fact (name ?predicate) (param-values $?values)))
+=>
+  (retract ?ef)
+)
+
+(defrule domain-action-is-final
+  "After the effects of an action have been applied, change it to FINAL."
+  ?a <- (plan-action (id ?action-id) (status EXECUTED))
+  (not (domain-pending-sensed-fact (action-id ?action-id)))
+  =>
+  (modify ?a (status FINAL))
+  (assert (domain-wm-update))
+)
+
 (defrule domain-check-if-action-is-executable
   "If the precondition of an action is satisfied, the action is executable."
   ?action <- (plan-action (id ?action-id) (executable FALSE))
-  (domain-precondition (action ?action-id) (is-satisfied TRUE))
+  (domain-precondition (grounded-with ?action-id) (is-satisfied TRUE))
 =>
   (modify ?action (executable TRUE))
 )
