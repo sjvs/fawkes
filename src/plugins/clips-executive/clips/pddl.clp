@@ -96,7 +96,7 @@
   (printout t "Fetched a new plan!" crlf)
   (progn$ (?action (bson-get-array (bson-get ?obj "o") "actions"))
     (bind ?param-values (bson-get-array ?action "args"))
-    ; Convert all paramters to lower-case symbols
+    ; Convert all paramters to upper-case symbols
     (progn$ (?param ?param-values)
       (bind ?param-values
             (replace$
