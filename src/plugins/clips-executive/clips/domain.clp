@@ -411,7 +411,7 @@
   "Apply effects of an action after it succeeded."
   ?pa <- (plan-action	(id ?id) (action-name ?op) (status EXECUTION-SUCCEEDED)
 											(param-names $?action-param-names) (param-values $?action-param-values))
-	(domain-operator (name ?action-name) (wait-sensed ?wait-sensed))
+	(domain-operator (name ?op) (wait-sensed ?wait-sensed))
 	=>
 	(do-for-all-facts ((?e domain-effect) (?p domain-predicate))
 		(and (eq ?e:part-of ?op) (eq ?e:predicate ?p:name))
