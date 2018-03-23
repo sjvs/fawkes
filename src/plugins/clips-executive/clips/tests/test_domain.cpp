@@ -212,6 +212,44 @@ TEST_F(BlocksworldDomainTest, ApplyContradictingEffectsWithDifferentParams)
         "(and (eq ?p:name clear) (eq ?p:param-values (create$ b2)))"));
 }
 
+/** If an action has the same effect both as positive and as negative effect,
+ * then the effect should hold after the effects are applied.
+ */
+TEST_F(DomainTest, ApplyCondtradictingEffectsWithSameParams)
+{
+  env.reset();
+  env.assert_fact("(domain-operator (name op1))");
+  env.assert_fact("(domain-operator-parameter (name x) (operator op1))");
+  env.assert_fact("(domain-predicate (name p) (param-names x))");
+  env.assert_fact("(plan-action"
+                  " (id 1)"
+                  " (status EXECUTION-SUCCEEDED)"
+                  " (action-name op1)"
+                  " (param-names x)"
+                  " (param-values a))");
+  env.assert_fact("(domain-effect"
+                  " (part-of op1)"
+                  " (predicate p)"
+                  " (type NEGATIVE)"
+                  " (param-names x)"
+                  ")");
+  env.assert_fact("(domain-effect"
+                  " (part-of op1)"
+                  " (predicate p)"
+                  " (type POSITIVE)"
+                  " (param-names x)"
+                  ")");
+  env.assert_fact("(domain-effect"
+                  " (part-of op1)"
+                  " (predicate p)"
+                  " (type NEGATIVE)"
+                  " (param-names x)"
+                  ")");
+  env.run();
+  EXPECT_TRUE(has_fact("((?f domain-fact))",
+        "(and (eq ?f:name p) (eq ?f:param-values (create$ a)))"));
+}
+
 /** Test whether constants in preconditions work as expected. */
 TEST_F(DomainTest, PreconditionWithConstant)
 {

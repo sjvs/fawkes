@@ -437,7 +437,24 @@
 				 then
 					(assert (domain-fact (name ?p:name) (param-values ?values)))
 				 else
-					(assert (domain-retracted-fact (name ?p:name) (param-values ?values)))
+          ; Check if there is also a positive effect for the predicate with the
+          ; same values. Only apply the negative effect if no such effect
+          ; exists.
+          ; NOTE: This does NOT work for conditional effects.
+          (if (not (any-factp
+                    ((?oe domain-effect))
+                    (and
+                      (eq ?oe:part-of ?op) (eq ?oe:predicate ?p:name)
+                      (eq ?oe:type POSITIVE)
+                      (eq ?values
+                          (domain-ground-effect ?oe:param-names
+                            ?oe:param-constants ?action-param-names
+                            ?action-param-values))
+                    )))
+          then
+					  (assert
+              (domain-retracted-fact (name ?p:name) (param-values ?values)))
+          )
 				)
 			)
 		)
