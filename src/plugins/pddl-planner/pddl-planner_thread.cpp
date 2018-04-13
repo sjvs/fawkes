@@ -32,7 +32,7 @@
 using namespace fawkes;
 using namespace mongo;
 
-/** @class PddlPlannerThread 'pddl-planner_thread.h' 
+/** @class PddlPlannerThread 'pddl-planner_thread.h'
  * Starts a pddl planner and writes the resulting plan into the robot memory
  * @author Frederik Zwilling
  */
@@ -136,7 +136,8 @@ PddlPlannerThread::ff_planner()
 
   size_t cur_pos = 0;
   if(result.find("found legal plan as follows", cur_pos) == std::string::npos) {
-    logger->log_error(name(), "Planning Failed: %s", result.c_str());
+    logger->log_error(name(), "Planning Failed here: %s", result.c_str());
+    action_list_.clear();
     robot_memory->update(fromjson("{plan:{$exists:true}}"), fromjson("{plan:1,fail:1,steps:[]}"), cfg_collection_, true);
     return;
   }
@@ -290,7 +291,7 @@ PddlPlannerThread::BSONFromActionList()
     action_builder << "args" << args_builder.arr();
     action_arr_builder << action_builder.obj();
   }
-  
+
   plan_builder << "actions" << action_arr_builder.arr();
 
   return plan_builder.obj();
@@ -334,7 +335,7 @@ PddlPlannerThread::run_planner(std::string command)
   while (!feof(pipe.get())) {
     if (fgets(buffer, 128, pipe.get()) != NULL)
       result += buffer;
-  } 
+  }
   logger->log_info(name(), "Planner finished run.");
 
   return result;
