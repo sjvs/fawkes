@@ -130,10 +130,11 @@
               )
         )
       )
+      (bind ?generatedID (gensym*))
       (assert
         (plan (id ?plan-id) (goal-id ?goal-id))
         (plan-action
-          (id (+ ?action-index ?id-offset))
+          (id (string-to-field (sub-string 4 (str-length ?generatedID) ?generatedID )))
           (plan-id ?plan-id)
           (action-name ?action-name)
           (param-values ?param-values)
