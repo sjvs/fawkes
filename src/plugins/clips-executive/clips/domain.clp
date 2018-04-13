@@ -568,7 +568,7 @@
 
 (defrule domain-check-operator-of-action-exists
   "Make sure that for each action in a plan, the respective operator exists."
-  (plan-action (action-name ?op))
+  (plan-action (action-name ?op& : (neq ?op send-beacon)))
   (not (domain-operator (name ?op)))
   =>
   (assert (domain-error (error-type operator-of-action-does-not-exist)

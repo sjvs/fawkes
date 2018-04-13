@@ -11,7 +11,7 @@
 (deftemplate goal
 	(slot id (type SYMBOL))
   (slot type (type SYMBOL) (allowed-values ACHIEVE MAINTAIN) (default ACHIEVE))
-	(slot mode (type SYMBOL) (allowed-values FORMULATED SELECTED EXPANDED
+	(slot mode (type SYMBOL) (allowed-values FORMULATED PAUSED SELECTED EXPANDED
 																					 COMMITTED DISPATCHED COMPLETED FAILED))
   (slot parent (type SYMBOL))
 )
@@ -30,7 +30,7 @@
 	(multislot param-values)
 	(slot duration (type FLOAT))
 	(slot dispatch-time (type FLOAT))
-	(slot status (type SYMBOL) (allowed-values FORMULATED PENDING WAITING RUNNING EXECUTION-SUCCEEDED EFFECTS-APPLIED FINAL EXECUTION-FAILED FAILED))
+	(slot status (type SYMBOL) (allowed-values FORMULATED PENDING PAUSED WAITING RUNNING EXECUTION-SUCCEEDED EFFECTS-APPLIED FINAL EXECUTION-FAILED FAILED))
   (slot executable (type SYMBOL) (allowed-values TRUE FALSE) (default FALSE))
 )
 
