@@ -187,7 +187,7 @@
   "Ground a non-atomic precondition. Grounding here merely means that we
    duplicate the precondition and tie it to one specific action-id."
   (not (domain-wm-update))
-  (plan-action (action-name ?op) (id ?action-id) 
+  (plan-action (action-name ?op) (id ?action-id)
     (status FORMULATED|PENDING|WAITING))
   ?precond <- (domain-precondition
                 (name ?precond-name)
@@ -298,6 +298,16 @@
   (domain-fact (name ?pred) (param-values $?params))
 =>
   (modify ?precond (is-satisfied TRUE))
+)
+(defrule domain-check-if-atomic-precondition-is-not-satisfied
+  ?precond <- (domain-atomic-precondition
+                (is-satisfied TRUE)
+                (predicate ?pred)
+                (param-values $?params)
+                (grounded TRUE))
+  (not (domain-fact (name ?pred) (param-values $?params)))
+=>
+  (modify ?precond (is-satisfied FALSE))
 )
 
 (defrule domain-check-if-negative-precondition-is-satisfied
@@ -603,4 +613,3 @@
   =>
   (printout error "Domain error '" ?type "': " ?msg crlf)
 )
-
