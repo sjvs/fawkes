@@ -37,14 +37,14 @@ class Time
 {
   Time();
   Time(long ms);
-  Time(float sec);
+  Time(double sec);
   Time(Clock *clock);
   Time(const Time &t);
   Time(long sec, long usec);
   Time(long sec, long usec, Clock *clock);
   ~Time();
 
-  float in_sec() const;
+  double in_sec() const;
   long  in_msec() const;
   long  in_usec() const;
 
@@ -52,10 +52,10 @@ class Time
 
   void set_time(const timeval* tv);
   void set_time(long ms);
-  void set_time(float sec);
+  void set_time(double sec);
   void set_time(const Time &t);
 
-  void add(float seconds);
+  void add(double seconds);
 
   Time & stamp();
 
