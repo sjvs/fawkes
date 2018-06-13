@@ -1,17 +1,31 @@
 #include <iostream>
+#include <thread> 
 #include <algorithm>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/string.hpp> 
+#include <boost/serialization/export.hpp> 
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/list.hpp>
 #include "tiny_dnn/tiny_dnn.h"
+#include "caffe.pb.h"
 
 using namespace std;
 using namespace boost::filesystem;
 using namespace tiny_dnn;
 using namespace tiny_dnn::activation;
 using namespace tiny_dnn::core;
+
+struct Dataset{
+	vec_t data;
+	std::string path;
+	label_t label;
+};
 
 static void construct_net(network<sequential>& nn) {
     // connection table, see Table 1 in [LeCun1998]
@@ -28,6 +42,7 @@ static void construct_net(network<sequential>& nn) {
 #undef O
 #undef X
 
+
     // by default will use backend_t::tiny_dnn unless you compiled
     // with -DUSE_AVX=ON and your device supports AVX intrinsics
     core::backend_t backend_type = core::backend_t::avx;
@@ -37,98 +52,37 @@ static void construct_net(network<sequential>& nn) {
     // C : convolution
     // S : sub-sampling
     // F : fully connected
- using fc = tiny_dnn::layers::fc;
+  using fc = tiny_dnn::layers::fc;
   using conv = tiny_dnn::layers::conv;
   using ave_pool = tiny_dnn::layers::ave_pool;
   using max_pool = tiny_dnn::layers::max_pool;
-  using tanh = tiny_dnn::activation::tanh;
+//  using tanh = tiny_dnn::activation::tanh;
+  using leaky_relu = tiny_dnn::activation::leaky_relu;
+  using softmax = tiny_dnn::activation::softmax;
+//  using tiny_dnn::core::connection_table;
+//  using padding = tiny_dnn::padding;
 
-  using tiny_dnn::core::connection_table;
-  using padding = tiny_dnn::padding;
 
-
-/*    nn << conv(128, 128, 5, 1, 6,   // C1, 1@32x32-in, 6@28x28-out
-             padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(15376,6)
-     << tanh()
-     << conv(128,128,5,6,8,padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(14400,8)
-     << tanh()
-     << max_pool(128,128,8,2,backend_type)
-     << tanh()
-     << conv(64,64,5,8,16,padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(3136,16)
-     << tanh()
-     << ave_pool(64, 64, 16, 2)   // S2, 6@28x28-in, 6@14x14-out
-     << tanh()
-     << conv(32, 32, 3, 16, 16,   // C3, 6@14x14-in, 16@10x10-out
-             padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(676,16)
-     << tanh()
-     << ave_pool(32, 32, 16, 2)  // S4, 16@10x10-in, 16@5x5-out
-     << tanh()
-     << fc(16384,65536)
-     << tanh()
-     << conv(64, 64, 3, 16, 120,   // C5, 16@5x5-in, 120@1x1-out
-             padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(121,120)
-     << tanh()
-     << max_pool(64,64,120,2)
-     << tanh()
-     << conv(32,32,5,120,60, padding::same,true,1,1,backend_type)
-     << batch_normalization_layer(1024,60)
-     << tanh()
-     << fc(61440, 61440, true, backend_type)  // F6, 120-in, 10-out
-     << tanh()
-     << fc(61140, 10, true, backen_type)
-     << batch_normalization_layer(10,1)
-     << tanh();
-*/
-    nn << conv(32, 32, 3, 1, 6,   // C1, 1@32x32-in, 6@28x28-out
-             padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(1024,6)
-     << tanh()
-     << conv(32,32,3,6,8,padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(1024,8)
-     << tanh()
-     << max_pool(32,32,8,2,backend_type)
-     << tanh()
-     << conv(16,16,5,8,16,padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(256,16)
-     << tanh()
-     << ave_pool(16, 16, 16, 2)   // S2, 6@28x28-in, 6@14x14-out
-     << tanh()
-     << conv(8, 8, 3, 16, 16,   // C3, 6@14x14-in, 16@10x10-out
-             padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(64,16)
-     << tanh()
-    // << ave_pool(32, 32, 16, 2)  // S4, 16@10x10-in, 16@5x5-out
-    // << tanh()
-     << conv(8, 8, 3, 16, 120,   // C5, 16@5x5-in, 120@1x1-out
-             padding::same, true, 1, 1, backend_type)
-     << batch_normalization_layer(64,120)
-     << tanh()
-     << fc(7680, 10, true, backend_type)  // F6, 120-in, 10-out
-     << batch_normalization_layer(10,1)
-     << tanh();
-
-/*nn << conv(32, 32, 5, 1, 6,   // C1, 1@32x32-in, 6@28x28-out
-             padding::same, true, 1, 1, backend_type)
-     << tanh()
-     << ave_pool(28, 28, 6, 2)   // S2, 6@28x28-in, 6@14x14-out
-     << tanh()
-     << conv(14, 14, 5, 6, 16,   // C3, 6@14x14-in, 16@10x10-out
-             connection_table(tbl, 6, 16),
-             padding::same, true, 1, 1, backend_type)
-     << tanh()
-     << ave_pool(10, 10, 16, 2)  // S4, 16@10x10-in, 16@5x5-out
-     << tanh()
-     << conv(5, 5, 5, 16, 120,   // C5, 16@5x5-in, 120@1x1-out
-             padding::same, true, 1, 1, backend_type)
-     << tanh()
-     << fc(120, 10, true, backend_type)  // F6, 120-in, 10-out
-     << tanh();
-*/
+  nn << conv(64,64,5,3,6, padding::same, true, 1,1,backend_type)
+     << leaky_relu()
+     << ave_pool(64,64,6,2)
+     << leaky_relu()
+     << conv(32,32,5,6,12, padding::same, true, 1, 1,backend_type)
+     << leaky_relu()
+     << max_pool(32,32,12,2)
+     << leaky_relu()
+     << conv(16,16,3,12,24,padding::same, true, 1,1,backend_type)
+     << leaky_relu()
+     << fc(16*16*24,4096,true,backend_type)
+     << leaky_relu()
+     << ave_pool(64,64,1,2) 
+     << leaky_relu()
+     << dropout_layer(32*32,0.3)
+     << leaky_relu()
+//     << fc(1024,512,true,backend_type)
+//     << leaky_relu()
+     << fc(1024,10,true,backend_type)
+     << softmax();
 }
 
 // convert image to vec_t
@@ -136,18 +90,26 @@ bool convert_image(const std::string& imagefilename,
                    double scale,
                    int w,
                    int h,
-                   std::vector<vec_t>& data)
+                   Dataset& data)
 {
-    auto img = cv::imread(imagefilename, cv::IMREAD_GRAYSCALE);
-    if (img.data == nullptr) return false; // cannot open, or it's not an image
+    auto img = cv::imread(imagefilename);
+    if (img.data == nullptr) {
+	    std::cout << "Can not open " << imagefilename << std::endl;
+	    return false; // cannot open, or it's not an image
+    }
 
-    cv::Mat_<uint8_t> resized;
+    cv::Mat resized;
     cv::resize(img, resized, cv::Size(w, h));
-    vec_t d;
-
-    std::transform(resized.begin(), resized.end(), std::back_inserter(d),
-                   [=](uint8_t c) { return c * scale; });
-    data.push_back(d);
+    std::vector<float> input_vec;
+    for(int i = 0; i < resized.channels();++i){
+	    for(int j = 0; j < resized.rows; ++j){
+		    for(int k = 0; k < resized.cols;++k){
+			input_vec.push_back(resized.at<cv::Vec3b>(j,i)[k]);
+		    }
+	    }
+    }
+    vec_t d(input_vec.begin(),input_vec.end());
+    data.data = d;
     return true;
 }
 
@@ -156,8 +118,7 @@ void convert_images(const std::string& directory,
                     double scale,
                     int w,
                     int h,
-                    std::vector<vec_t>& data,
-		    std::vector<label_t>& labels)
+                    std::vector<Dataset>& training_set)
 {
     std::vector<std::string> label_mapping;
     path p(directory);
@@ -172,6 +133,8 @@ void convert_images(const std::string& directory,
 			std::vector<std::string> parts;
 			boost::split(parts,p.string(), [](char c){return c == '/';});
 			
+			Dataset data;
+
 			std::string label_string = parts[parts.size()-2];	
 			label_t label = 9999;
 			for(unsigned int i = 0; i < label_mapping.size(); ++i){
@@ -186,7 +149,9 @@ void convert_images(const std::string& directory,
 			}
 				
 			if(convert_image(p.string(), scale, w, h, data)){
-				labels.push_back(label);
+				data.label = label;
+				data.path = p.string();
+				training_set.push_back(data);
 			}
     		}
       
@@ -195,37 +160,86 @@ void convert_images(const std::string& directory,
             continue;
     }
     std::vector<int> indices;
-    for (unsigned int i = 0; i< labels.size(); ++i){
+    for (unsigned int i = 0; i< training_set.size(); ++i){
 
 	indices.push_back(i);
     }
 
     std::random_shuffle(indices.begin(), indices.end());
 
-    std::vector<vec_t> images2;
-    std::vector<label_t> labels2;
+    std::vector<Dataset> training_set2;
     for(unsigned int i = 0; i < indices.size(); ++i){
-	images2.push_back(data[indices[i]]);
-	labels2.push_back(labels[indices[i]]);
+	training_set2.push_back(training_set[indices[i]]);
     }
-    data = images2;
-    labels = labels2;
+    training_set = training_set2;
 
-    std::cout << "Label count: " << label_mapping.size() << endl;
 
-    for(unsigned int i = 0; i < labels.size(); ++i){
-	cout << labels[i] << endl;
+    std::cout << "Training set:  " << training_set.size() << endl;
 
-    }
 }
 
-static void train_lenet(const std::string& data_dir_path, const std::string& test_dir_path, const std::string& output_path) {
-    #ifdef CNN_SINGLE_THREAD
-    std::cout << "Single Thread\n";
-    #else
-     std::cout << "Threads: " << CNN_TASK_SIZE << endl;	
-    #endif
 
+void extract_features(const std::string& datadir, const std::string& model_file, const std::string& trained_file, std::vector<vec_t>& data, std::vector<label_t>& labels, bool overwrite = false){
+
+    auto nn = tiny_dnn::create_net_from_caffe_prototxt(model_file);
+    tiny_dnn::reload_weight_from_caffe_protobinary(trained_file,nn.get());
+    //int width = (*nn)[0]->in_data_shape()[0].width_;
+    //int height = (*nn)[0]->in_data_shape()[0].height_;
+
+    std::vector<std::string> filenames;
+    std::vector<vec_t> image_data;
+    //convert_images(datadir,1,width,height,image_data,labels,filenames);
+
+    std::vector<std::string> parts;
+    for(unsigned int i = 0; i < image_data.size(); ++i){
+	//Check if file is there
+	boost::split(parts, filenames[i], [](char c){return c == '.';});
+	std::string feature_file;
+	for(unsigned int i = 0; i < parts.size()-1;++i){
+		feature_file += parts[i] + ".";
+	}
+	feature_file += "features";
+	
+	std::ifstream in(feature_file.c_str(),ios::binary);
+	bool successfully_loaded = false;
+	if(in.good()&& !overwrite){
+		vec_t loaded;
+		try{
+			boost::archive::binary_iarchive ia(in);	
+			ia >> loaded;
+			in.close();
+			std::cout << "loaded dim: " << loaded.size() << std::endl;
+			vec_t loaded_vec(loaded.begin(),loaded.end());
+			successfully_loaded = true;
+			data.push_back(loaded);
+		}catch (...){
+			std::cout << "Invalid input file " << feature_file << std::endl;
+		}
+
+	}
+	if(!successfully_loaded){
+		vec_t result = nn->predict(image_data[i]);
+		data.push_back(result);
+		std::cout << "Result dim: " << result.size() << std::endl;
+		std::ofstream out(feature_file.c_str());
+		stringstream ss;
+		boost::archive::binary_oarchive oa(ss);
+		oa << result;
+		out << ss.str();
+		out.close();
+	}
+        std::cout << i << "/" << image_data.size() << std::endl;	
+    }
+
+
+}
+
+
+static void train_lenet(const std::string& data_dir_path, 	
+				const std::string& test_dir_path, 
+				const std::string& caffe_prototxt_path, 
+				const std::string& caffemodel_path, 
+				const std::string& output_path,bool overwrite) {
     // specify loss-function and learning strategy
     
     network<sequential> nn;
@@ -240,36 +254,46 @@ static void train_lenet(const std::string& data_dir_path, const std::string& tes
     std::vector<vec_t> train_images;
     std::vector<label_t> test_labels;
     std::vector<vec_t> test_images;
-/*    parse_mnist_labels(data_dir_path + "/train-labels.idx1-ubyte",
-                       &train_labels);
-  parse_mnist_images(data_dir_path + "/train-images.idx3-ubyte",
-                      &train_images, -1.0, 1.0, 2, 2);
-   parse_mnist_labels(data_dir_path + "/t10k-labels.idx1-ubyte",
-                       &test_labels);
-    parse_mnist_images(data_dir_path + "/t10k-images.idx3-ubyte",
-                       &test_images, -1.0, 1.0, 2, 2);
-*/
-    convert_images(data_dir_path,1.0,32,32,train_images,train_labels);
-    convert_images(test_dir_path,1.0,32,32,test_images,test_labels);
 
+    std::vector<Dataset> training_set;
+    std::vector<Dataset> test_set;
+//    extract_features(data_dir_path,caffe_prototxt_path,caffemodel_path,train_images,train_labels,overwrite);
+//    extract_features(test_dir_path,caffe_prototxt_path,caffemodel_path,test_images,test_labels,overwrite);
+
+    convert_images(data_dir_path,1,64,64,training_set);
+    convert_images(test_dir_path,1,64,64,test_set);
     std::cout << "start training, images: " << train_images.size() << ", " << train_labels.size() << std::endl;
+
+    for(unsigned int i = 0; i < training_set.size(); ++i){
+	train_labels.push_back(training_set[i].label);
+	train_images.push_back(training_set[i].data);
+	
+	std::cout << training_set[i].label << "          " << training_set[i].path << std::endl;
+    }
+
+    std::cout << "Test set..." << std::endl;
+
+    for(unsigned int i = 0; i < test_set.size(); ++i){
+	test_labels.push_back(test_set[i].label);
+	test_images.push_back(test_set[i].data);
+	
+	std::cout << training_set[i].label << "          " << training_set[i].path << std::endl;
+    }
+
 
     progress_display disp(static_cast<unsigned long>(train_images.size()));
     timer t;
-    int minibatch_size = 16;
+    int minibatch_size = 5;
     int num_epochs = 30;
-    double learning_rate = 1;
+    double learning_rate = 0.1;
 
-  //  optimizer.alpha *= static_cast<tiny_dnn::float_t>(2.4);
-    optimizer.alpha *=
-    	std::min(tiny_dnn::float_t(1),
-             static_cast<tiny_dnn::float_t>(sqrt(minibatch_size) * learning_rate));
+    optimizer.alpha *= static_cast<tiny_dnn::float_t>(learning_rate);
 
 
     // create callback
     auto on_enumerate_epoch = [&](){
         std::cout << t.elapsed() << "s elapsed." << std::endl;
-        tiny_dnn::result res = nn.test(test_images, test_labels);
+        tiny_dnn::result res = nn.test(train_images,train_labels);
         std::cout << res.num_success << "/" << res.num_total << std::endl;
         
 	disp.restart(static_cast<unsigned long>(train_images.size()));
@@ -281,7 +305,7 @@ static void train_lenet(const std::string& data_dir_path, const std::string& tes
     };
 
     // training
-    nn.train<mse>(optimizer, train_images, train_labels, minibatch_size, num_epochs,
+    nn.train<cross_entropy>(optimizer, train_images, train_labels, minibatch_size, num_epochs,
              on_enumerate_minibatch, on_enumerate_epoch);
 
     std::cout << "end training." << std::endl;
@@ -294,11 +318,19 @@ static void train_lenet(const std::string& data_dir_path, const std::string& tes
 }
 
 int main(int argc, char **argv) {
-    if (argc != 4) {
+    if (argc != 7) {
         std::cerr << "Usage : " << argv[0]
-                  << " path_to_data (example:../data) path_to_test_data output_path" << std::endl;
+                  << " path_to_data path_to_test_data path_to_caffe_prototxt path_to_caffemodel output_path" << std::endl;
         return -1;
     }
-    train_lenet(argv[1],argv[2],argv[3]);
+    bool overwrite;
+    std::string arg(argv[6]);
+    if(arg == "true"){
+	    overwrite = true;
+    }
+    else{
+	    overwrite = false;
+    }
+    train_lenet(argv[1],argv[2],argv[3],argv[4], argv[5],overwrite);
     return 0;
 }
