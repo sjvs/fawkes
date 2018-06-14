@@ -63,7 +63,7 @@ static void construct_net(network<sequential>& nn) {
 //  using padding = tiny_dnn::padding;
 
 
-  nn << conv(64,64,5,3,6, padding::same, true, 1,1,backend_type)
+  nn << conv(64,64,5,1,6, padding::same, true, 1,1,backend_type)
      << leaky_relu()
      << ave_pool(64,64,6,2)
      << leaky_relu()
@@ -101,10 +101,10 @@ bool convert_image(const std::string& imagefilename,
     cv::Mat resized;
     cv::resize(img, resized, cv::Size(w, h));
     std::vector<float> input_vec;
-    for(int i = 0; i < resized.channels();++i){
-	    for(int j = 0; j < resized.rows; ++j){
-		    for(int k = 0; k < resized.cols;++k){
-			input_vec.push_back(resized.at<cv::Vec3b>(j,i)[k]);
+    for(int i = resized.channels()-1; i > -1;i--){
+	    for(int j = 0; j < resized.cols; ++j){
+		    for(int k = 0; k < resized.rows; k++){
+			input_vec.push_back(resized.at<cv::Vec3b>(k,j)[i]);
 		    }
 	    }
     }
@@ -179,21 +179,23 @@ void convert_images(const std::string& directory,
 }
 
 
-void extract_features(const std::string& datadir, const std::string& model_file, const std::string& trained_file, std::vector<vec_t>& data, std::vector<label_t>& labels, bool overwrite = false){
+void extract_features(const std::string& datadir, 
+				const std::string& model_file, 
+				const std::string& trained_file, 
+				std::vector<Dataset>& training_set, 
+				bool overwrite = false){
 
     auto nn = tiny_dnn::create_net_from_caffe_prototxt(model_file);
     tiny_dnn::reload_weight_from_caffe_protobinary(trained_file,nn.get());
-    //int width = (*nn)[0]->in_data_shape()[0].width_;
-    //int height = (*nn)[0]->in_data_shape()[0].height_;
+    int width = (*nn)[0]->in_data_shape()[0].width_;
+    int height = (*nn)[0]->in_data_shape()[0].height_;
 
-    std::vector<std::string> filenames;
-    std::vector<vec_t> image_data;
-    //convert_images(datadir,1,width,height,image_data,labels,filenames);
+    convert_images(datadir,1,width,height,training_set);
 
     std::vector<std::string> parts;
-    for(unsigned int i = 0; i < image_data.size(); ++i){
+    for(unsigned int i = 0; i < training_set.size(); ++i){
 	//Check if file is there
-	boost::split(parts, filenames[i], [](char c){return c == '.';});
+	boost::split(parts, training_set[i].path, [](char c){return c == '.';});
 	std::string feature_file;
 	for(unsigned int i = 0; i < parts.size()-1;++i){
 		feature_file += parts[i] + ".";
@@ -208,18 +210,19 @@ void extract_features(const std::string& datadir, const std::string& model_file,
 			boost::archive::binary_iarchive ia(in);	
 			ia >> loaded;
 			in.close();
+
 			std::cout << "loaded dim: " << loaded.size() << std::endl;
 			vec_t loaded_vec(loaded.begin(),loaded.end());
 			successfully_loaded = true;
-			data.push_back(loaded);
+			training_set[i].data = loaded;
 		}catch (...){
 			std::cout << "Invalid input file " << feature_file << std::endl;
 		}
 
 	}
 	if(!successfully_loaded){
-		vec_t result = nn->predict(image_data[i]);
-		data.push_back(result);
+		vec_t result = nn->predict(training_set[i].data);
+		training_set[i].data=result;
 		std::cout << "Result dim: " << result.size() << std::endl;
 		std::ofstream out(feature_file.c_str());
 		stringstream ss;
@@ -228,9 +231,10 @@ void extract_features(const std::string& datadir, const std::string& model_file,
 		out << ss.str();
 		out.close();
 	}
-        std::cout << i << "/" << image_data.size() << std::endl;	
+        std::cout << i << "/" << training_set.size() << std::endl;	
     }
 
+    std::cout << "Training set size: " << training_set.size() << std::endl;
 
 }
 
@@ -257,12 +261,13 @@ static void train_lenet(const std::string& data_dir_path,
 
     std::vector<Dataset> training_set;
     std::vector<Dataset> test_set;
-//    extract_features(data_dir_path,caffe_prototxt_path,caffemodel_path,train_images,train_labels,overwrite);
-//    extract_features(test_dir_path,caffe_prototxt_path,caffemodel_path,test_images,test_labels,overwrite);
 
-    convert_images(data_dir_path,1,64,64,training_set);
-    convert_images(test_dir_path,1,64,64,test_set);
-    std::cout << "start training, images: " << train_images.size() << ", " << train_labels.size() << std::endl;
+    extract_features(data_dir_path,caffe_prototxt_path,caffemodel_path,training_set,overwrite);
+    extract_features(test_dir_path,caffe_prototxt_path,caffemodel_path,test_set,overwrite);
+
+//    convert_images(data_dir_path,1,64,64,training_set);
+//    convert_images(test_dir_path,1,64,64,test_set);
+    std::cout << "start training, images: " << training_set.size() << ", " << test_set.size() << std::endl;
 
     for(unsigned int i = 0; i < training_set.size(); ++i){
 	train_labels.push_back(training_set[i].label);
@@ -277,7 +282,7 @@ static void train_lenet(const std::string& data_dir_path,
 	test_labels.push_back(test_set[i].label);
 	test_images.push_back(test_set[i].data);
 	
-	std::cout << training_set[i].label << "          " << training_set[i].path << std::endl;
+	std::cout << test_set[i].label << "          " << test_set[i].path << std::endl;
     }
 
 
@@ -293,7 +298,7 @@ static void train_lenet(const std::string& data_dir_path,
     // create callback
     auto on_enumerate_epoch = [&](){
         std::cout << t.elapsed() << "s elapsed." << std::endl;
-        tiny_dnn::result res = nn.test(train_images,train_labels);
+        tiny_dnn::result res = nn.test(test_images,test_labels);
         std::cout << res.num_success << "/" << res.num_total << std::endl;
         
 	disp.restart(static_cast<unsigned long>(train_images.size()));

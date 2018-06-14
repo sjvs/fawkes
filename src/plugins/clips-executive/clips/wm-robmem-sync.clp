@@ -269,8 +269,14 @@
 			(do-for-fact ((?wf wm-fact) (?sm wm-robmem-sync-map-entry)) (and (eq ?sm:wm-fact-id ?id) (eq ?wf:id ?id))
 				(if (time> ?update-timestamp ?sm:update-timestamp)
 				then
+<<<<<<< Updated upstream
 					(printout debug "wm-robmem-sync-update: updating (known fact) " ?id crlf)
 					(modify ?wf (type ?type) (is-list ?is-list) (value ?value) (values ?values))
+=======
+					(printout debug "wm-robmem-sync-update: updating (known fact) " ?id " values: " ?values crlf)
+					(bind ?new-wf (modify ?wf (type ?type) (is-list ?is-list) (value ?value) (values ?values)))
+					(modify ?sm (wm-fact-idx (fact-index ?new-wf)))
+>>>>>>> Stashed changes
 				else
 					(printout warn "wm-robmem-sync-update: received update for " ?id " with older data than our own" crlf)
 				)
