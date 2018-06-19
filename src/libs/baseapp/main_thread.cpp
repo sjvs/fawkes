@@ -386,7 +386,7 @@ FawkesMainThread::loop()
         // give some extra 10% to eliminate frequent false warnings due to regular
         // time jitter (TimeWait might not be all that precise)
 	if (loop_time > 1.1 * __desired_loop_time_sec) {
-	  __multi_logger->log_warn("FawkesMainThread", "Loop time exceeded, "
+	  __multi_logger->log_debug("FawkesMainThread", "Loop time exceeded, "
 				   "desired: %f sec (%u usec),  actual: %f sec",
 				   __desired_loop_time_sec, __desired_loop_time_usec,
 				   loop_time);
