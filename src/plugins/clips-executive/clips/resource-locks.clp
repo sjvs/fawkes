@@ -68,6 +68,17 @@
   (modify ?g (mode FINISHED) (outcome REJECTED))
 )
 
+(defrule resource-locks-reject-if-unlock-pending
+  ?g <- (goal (mode COMMITTED)
+              (id ?goal-id)
+              (acquired-resources)
+              (required-resources $?req))
+  (unlock-pending ?mutex&:(member$ (mutex-to-resource ?mutex) ?req))
+  =>
+  (printout warn "Rejecting goal " ?goal-id ", pending unlock on " ?mutex crlf)
+  (modify ?g (mode FINISHED) (outcome REJECTED))
+)
+
 (defrule resource-locks-lock-acquired
   ?m <- (mutex (name ?res) (request LOCK) (response ACQUIRED))
   ?g <- (goal (mode COMMITTED)
