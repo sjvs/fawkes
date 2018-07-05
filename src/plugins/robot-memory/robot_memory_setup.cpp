@@ -57,6 +57,13 @@ RobotMemorySetup::~RobotMemorySetup()
  */
 void RobotMemorySetup::setup_mongods()
 {
+  bool manage_instances = true;
+  try {
+    manage_instances = config->get_bool("plugins/robot-memory/setup/manage-instances");
+  } catch (Exception &e) {}
+  if (!manage_instances) {
+    return;
+  }
 	std::string log_path = config->get_string("plugins/robot-memory/setup/log-path");
   prepare_mongo_db_path(log_path);
 
