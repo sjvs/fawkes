@@ -42,7 +42,7 @@ katana jaco: openrave
 amcl colli laser-lines navgraph navgraph-generator navgraph-interactive perception robotino: ros
 mongodb_log: mongodb
 mongodb: rrd
-clips-navgraph clips-agent clips-pddl-parser clips-protobuf clips-tf clips-robot-memory: clips
+clips-navgraph clips-agent clips-executive clips-pddl-parser clips-protobuf clips-tf clips-robot-memory: clips
 clips-navgraph navgraph-clusters: navgraph
 clips-webview: clips webview
 clips-ros: clips ros
