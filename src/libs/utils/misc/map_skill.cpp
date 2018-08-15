@@ -126,7 +126,7 @@ ActionSkillMapping::add_mapping(std::string action_name, std::string skill_strin
  * @return true if mapping exists, false otherwise
  */
 bool
-ActionSkillMapping::has_mapping(std::string &action_name) const
+ActionSkillMapping::has_mapping(const std::string &action_name) const
 {
 	return (mappings_.find(action_name) != mappings_.end());
 }

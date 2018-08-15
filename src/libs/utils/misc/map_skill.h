@@ -34,7 +34,7 @@ class ActionSkillMapping
 	ActionSkillMapping(std::map<std::string, std::string> &mappings);
 
 	void add_mapping(std::string action_name, std::string skill_string_template);
-	bool has_mapping(std::string &action_name) const;
+	bool has_mapping(const std::string &action_name) const;
 
 	std::string
 		map_skill(const std::string &name, const std::map<std::string, std::string> &params,
