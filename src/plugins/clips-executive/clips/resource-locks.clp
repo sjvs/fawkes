@@ -147,17 +147,16 @@
      then
       (printout warn "Unlocking resource " ?res crlf)
       (mutex-unlock-async (resource-to-mutex ?res))
-      (assert (unlock-pending (resource-to-mutex ?res)))
     )
   )
-  (modify ?g (acquired-resources))
 )
 
 (defrule resource-locks-unlock-done
-  ?up <- (unlock-pending ?res)
-  ?m <- (mutex (request UNLOCK) (response UNLOCKED))
+  ?m <- (mutex (name ?res) (request UNLOCK) (response UNLOCKED))
+  ?g <- (goal (acquired-resources $?acq
+                &:(member$ (mutex-to-resource ?res) ?acq)))
   =>
-  (printout info "Unlocking " ?res " completed" crlf)
+  (modify ?g (acquired-resources
+              (delete-member$ ?acq (mutex-to-resource ?res))))
   (modify ?m (request NONE) (response NONE))
-  (retract ?up)
 )
