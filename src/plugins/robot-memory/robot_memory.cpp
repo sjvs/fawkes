@@ -892,6 +892,7 @@ RobotMemory::mutex_try_lock(const std::string& name,
         logger_->log_warn(name_,
             "Exception during try-lock for %s, but already got the log. Updating timestamp",
             name.c_str());
+	    return mutex_renew_lock(name,identity);
       } else {
         logger_->log_info(name_,
             "Exception during try-lock for %s, and mutex was not acquired",
