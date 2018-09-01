@@ -944,9 +944,8 @@ RobotMemory::mutex_unlock(const std::string& name,
 	// here we can add an $or to implement lock timeouts
 	mongo::BSONObj filter_doc{BSON("_id" << name << "locked-by" << identity)};
 
-	mongo::BSONObj update_doc{BSON("$set" << BSON("locked" << false) <<
-	                               "$unset" << BSON("locked-by" << true <<
-	                                                "lock-time" << true))};
+	mongo::BSONObj update_doc{BSON("$set" << BSON("locked" << false << "lock-time" << true) <<
+	                               "$unset" << BSON("locked-by" << true))};
 
 	try {
 		logger_->log_error(name_,"MutexUnlock: MutexLocker requesting %s, %s", name.c_str(), identity.c_str());
