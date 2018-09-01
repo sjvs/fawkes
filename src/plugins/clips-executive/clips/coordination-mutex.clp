@@ -263,8 +263,8 @@
 	?of <- (mutex-op-feedback try-lock-async FAIL ?name)
 	=>
 	(retract ?of)
-	(modify ?mf (response REJECTED) (error-msg "Lock held by 'unknown'")
-	            (state LOCKED) (locked-by "unknown"))
+	(modify ?mf (response REJECTED) (error-msg "Lock held by 'unknown'"))
+	            ;(state LOCKED) (locked-by "unknown")
 )
 
 (defrule mutex-lock-op-cleanup
