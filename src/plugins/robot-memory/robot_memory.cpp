@@ -866,16 +866,13 @@ RobotMemory::mutex_try_lock(const std::string& name,
 	update_doc.append("$set", update_set.obj());
 
 	try {
-    logger_->log_error(name_,"MutexLock: MutexLocker requesting %s, %s", name.c_str(), identity.c_str());
 		MutexLocker locker(mutex_);
-    logger_->log_error(name_,"MutexLock: MutexLocker creation successfull %s, %s", name.c_str(), identity.c_str());
 		BSONObj new_doc =
 			client->findAndModify(cfg_coord_mutex_collection_,
 			                      filter_doc.obj(), update_doc.obj(),
 			                      /* upsert */ true, /* return new */ true,
 			                      /* sort */ BSONObj(), /* fields */ BSONObj(),
 			                      &mongo::WriteConcern::majority);
-    logger_->log_error(name_,"MutexLock: Find and Modify finished %s, %s", name.c_str(), identity.c_str());
 		return (new_doc.getField("locked-by").String() == identity &&
 		        new_doc.getField("locked").Bool());
 
@@ -887,16 +884,13 @@ RobotMemory::mutex_try_lock(const std::string& name,
       check_doc.append("locked", true);
       check_doc.append("locked-by", identity);
       
-      logger_->log_error(name_,"MutexLock: MutexLocker requesting %s, %s", name.c_str(), identity.c_str());
       MutexLocker locker(mutex_);
-      logger_->log_error(name_,"MutexLock: MutexLocker creation successfull %s, %s", name.c_str(), identity.c_str());
 
       BSONObj res_doc  =
         client->findOne(cfg_coord_mutex_collection_, check_doc.obj());
-      logger_->log_info(name_, "Checking whether mutex was acquired succeeded");
       if (!res_doc.isEmpty()) {
         logger_->log_warn(name_,
-            "Exception during try-lock for %s, but mutex was still acquired",
+            "Exception during try-lock for %s, but already got the log. Updating timestamp",
             name.c_str());
       } else {
         logger_->log_info(name_,
