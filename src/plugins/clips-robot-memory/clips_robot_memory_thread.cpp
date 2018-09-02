@@ -1026,7 +1026,7 @@ ClipsRobotMemoryThread::clips_robotmemory_mutex_force_lock_async(std::string nam
 }
 
 CLIPS::Values
-ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async(std::string name, std::string identity,std::string env_name)
+ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async(std::string env_name, std::string name, std::string identity)
 {
 	CLIPS::Values rv;
 	if (! mutex_future_ready(name)) {
