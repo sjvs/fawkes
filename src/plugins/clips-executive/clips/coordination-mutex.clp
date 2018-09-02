@@ -278,7 +278,7 @@
 
 (defrule mutex-lock-op-cleanup
 	(not (mutex (name ?name) (response PENDING)))
-	?of <- (mutex-op-feedback try-lock-async FAIL ?name)
+	?of <- (mutex-op-feedback try-lock-async ?status ?name)
 	=>
 	(retract ?of)
 )
@@ -344,6 +344,13 @@
 	=>
 	(retract ?of)
 	(modify ?mf (response REJECTED) (error-msg "Unlocking failed"))
+)
+
+(defrule mutex-unlock-op-cleanup
+	?of <- (mutex-op-feedback try-unlock-async ?status ?name)
+	(not (mutex (name ?name) (response PENDING)))
+	=>
+	(retract ?of)
 )
 
 (defrule mutex-unlock-invalid
