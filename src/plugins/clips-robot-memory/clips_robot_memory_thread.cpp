@@ -1032,6 +1032,8 @@ ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async(std::string env_nam
 	if (! mutex_future_ready(name)) {
 		rv.push_back(CLIPS::Value("FALSE", CLIPS::TYPE_SYMBOL));
 		rv.push_back(CLIPS::Value("Task already running for "+name+" (unlock failed)"));
+		envs_[env_name]->assert_fact_f("(mutex-op-feedback try-unlock-async FAIL %s)",
+			                                                     name.c_str());
 		return rv;
 	}
 
