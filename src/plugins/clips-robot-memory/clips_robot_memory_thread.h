@@ -115,7 +115,7 @@ class ClipsRobotMemoryThread
   CLIPS::Values clips_robotmemory_mutex_renew_lock_async(std::string env_name,
                                                          std::string name, std::string identity);
   CLIPS::Values clips_robotmemory_mutex_force_lock_async(std::string name, std::string identity);
-  CLIPS::Values clips_robotmemory_mutex_unlock_async(std::string name, std::string identity);
+  CLIPS::Values clips_robotmemory_mutex_unlock_async(std::string name, std::string identity, std::string env_name);
   CLIPS::Value  clips_robotmemory_mutex_expire_locks_async(std::string env_name, float max_age_sec);
 
   CLIPS::Value  clips_robotmemory_register_trigger(std::string env_name, std::string collection, void *query, std::string assert_name);

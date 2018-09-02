@@ -149,8 +149,9 @@ ClipsRobotMemoryThread::clips_context_init(const std::string &env_name,
                       sigc::slot<CLIPS::Values, std::string, std::string>
                       (sigc::mem_fun(*this, &ClipsRobotMemoryThread::clips_robotmemory_mutex_force_lock_async)));
   clips->add_function("robmem-mutex-unlock-async",
-                      sigc::slot<CLIPS::Values, std::string, std::string>
-                      (sigc::mem_fun(*this, &ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async)));
+                      sigc::slot<CLIPS::Values, std::string, std::string>(
+		      sigc::bind<0>
+                      (sigc::mem_fun(*this, &ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async),env_name)));
   clips->add_function("robmem-mutex-expire-locks-async",
                       sigc::slot<CLIPS::Value, float>(
                       sigc::bind<0>
@@ -953,12 +954,14 @@ ClipsRobotMemoryThread::clips_robotmemory_mutex_try_lock_async(std::string env_n
 	                      [this, env_name, name, identity] {
 		                      bool ok = robot_memory->mutex_try_lock(name, identity);
 		                      if (! ok) {
-                            printf("Before MutexLocker try_lock async\n");
 			                      MutexLocker lock(envs_[env_name].objmutex_ptr());
-                            printf("After MutexLocker try_lock async\n");
 			                      envs_[env_name]->assert_fact_f("(mutex-op-feedback try-lock-async FAIL %s)",
 			                                                     name.c_str());
 		                      }
+				      else{
+					      MutexLocker lock(envs_[env_name].objmutex_ptr());
+					      envs_[env_name]->assert_fact_f("(mutex-op-feedback try-lock-async OK %s)",name.c_str());
+				      }
 		                      return ok;
 	                      });
 
@@ -1023,7 +1026,7 @@ ClipsRobotMemoryThread::clips_robotmemory_mutex_force_lock_async(std::string nam
 }
 
 CLIPS::Values
-ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async(std::string name, std::string identity)
+ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async(std::string name, std::string identity,std::string env_name)
 {
 	CLIPS::Values rv;
 	if (! mutex_future_ready(name)) {
@@ -1033,8 +1036,18 @@ ClipsRobotMemoryThread::clips_robotmemory_mutex_unlock_async(std::string name, s
 	}
 
 	auto fut = std::async(std::launch::async,
-	                      [this, name, identity] {
-		                      return robot_memory->mutex_unlock(name, identity);
+	                      [this,env_name, name, identity] {
+		                      bool ok =  robot_memory->mutex_unlock(name, identity);
+				      if (! ok) {
+			                      MutexLocker lock(envs_[env_name].objmutex_ptr());
+			                      envs_[env_name]->assert_fact_f("(mutex-op-feedback try-unlock-async FAIL %s)",
+			                                                     name.c_str());
+		                      }
+				      else{
+					      MutexLocker lock(envs_[env_name].objmutex_ptr());
+					      envs_[env_name]->assert_fact_f("(mutex-op-feedback try-unlock-async OK %s)",name.c_str());
+				      }
+				      return ok;
 	                      });
 
 	mutex_futures_[name] = std::move(fut);

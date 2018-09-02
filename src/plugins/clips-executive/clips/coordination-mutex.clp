@@ -258,6 +258,15 @@
 	(modify ?mf (response REJECTED) (error-msg (str-cat "Lock held by " ?lb)))
 )
 
+(defrule mutex-lock-op-succeeded
+	?mf <- (mutex (name ?name) (request LOCK) (response PENDING))
+	?of <- (mutex-op-feedback try-lock-async OK ?name)
+	=>
+	(retract ?of)
+	(bind ?self (cx-identity))
+	(modify ?mf (response ACQUIRED) (state LOCKED) (locked-by ?self))
+)
+
 (defrule mutex-lock-op-failed
 	?mf <- (mutex (name ?name) (request LOCK) (response PENDING))
 	?of <- (mutex-op-feedback try-lock-async FAIL ?name)
@@ -319,6 +328,22 @@
 	(printout t "Requesting unlock " ?name crlf)
 	(robmem-mutex-unlock-async (str-cat ?name) (cx-identity))
 	(modify ?mf (response PENDING))
+)
+
+(defrule mutex-unlock-op-feedback-ok
+	?mf <- (mutex (name ?name) (request UNLOCK) (state LOCKED) (response PENDING))
+	?of <- (mutex-op-feedback try-unlock-async OK ?name)
+	=>
+	(retract ?of)
+	(modify ?mf (response UNLOCKED) (state OPEN))
+)
+
+(defrule mutex-unlock-op-feedback-failed
+	?mf <- (mutex (name ?name) (request UNLOCK) (state LOCKED) (response PENDING))
+	?of <- (mutex-op-feedback try-unlock-async FAIL ?name)
+	=>
+	(retract ?of)
+	(modify ?mf (response REJECTED) (error-msg "Unlocking failed"))
 )
 
 (defrule mutex-unlock-invalid
